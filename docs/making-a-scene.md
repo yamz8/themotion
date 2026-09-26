@@ -45,6 +45,7 @@ fade_in = 0.6
 | `nearest_label(labels, reach)` | Hands soft-edge pixels to the shape they belong to |
 | `thin_parts(mask, width)` | Separates thin strokes, like whiskers, from a body |
 | `circle_of(mask)` | Centre and radius of a round shape |
+| `unmix(image, backdrop, ink)` | Coverage and per-pixel colour of a shape whose colour varies (grain, gradients) over a known backdrop |
 
 Run `themotion split <scene>` and look at the PNGs in `build/.../layers/`. The layers drawn back in place should rebuild the wallpaper closely; the pattern's final blend covers the last few levels of difference.
 

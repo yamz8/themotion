@@ -100,3 +100,16 @@ def thin_parts(mask, width, within=None):
 
 def erode(mask, px):
     return nd.binary_erosion(mask, iterations=px)
+
+
+def unmix(image, backdrop, ink):
+    """Separate a shape whose colour varies (grain, gradients) from a known backdrop.
+
+    `ink` is the shape's full-strength reference colour. Returns the coverage,
+    0..1, and a per-pixel colour that, drawn at that coverage over `backdrop`,
+    gives back the image.
+    """
+    lift = (image - backdrop) / (np.asarray(ink, float) - backdrop + 1e-9)
+    alpha = np.clip(lift.max(-1), 0, 1)
+    color = backdrop + (image - backdrop) / np.maximum(alpha, 1e-3)[..., None]
+    return alpha, np.clip(color, 0, 255)
