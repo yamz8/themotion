@@ -54,6 +54,7 @@ Paintings and photos don't split into clean layers; for those, see [docs/real-fo
 | Theme | Scene | Pattern |
 |---|---|---|
 | Catppuccin | `1-totoro`: Totoro moonrise | omarchy-intro@1 |
+| Catppuccin | `3-blue-eye`: Blue eye opens | omarchy-intro@1 |
 
 ## License
 
