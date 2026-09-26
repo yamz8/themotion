@@ -16,16 +16,11 @@ themotion.scene({
     this.sphere = m.sphere
     this.final = this.light(m.shade)
 
-    // Per-cell nudges that make the fitted shading dither to exactly the
-    // wallpaper's cells under the final light.
-    const { cols, rows } = this.box, cx = m.sphere[0], cy = m.sphere[1]
-    this.nudge = new Float32Array(cols * rows)
-    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
-      const gi = x0 + i, gj = y0 + j, bit = m.bits[j][i] === "1"
-      const tone = this.tone(gi, gj, cx, cy, m.sphere[2], this.final), thr = this.threshold(gi, gj, m)
-      if (bit && tone <= thr) this.nudge[j * cols + i] = thr - tone + 1e-4
-      else if (!bit && tone > thr) this.nudge[j * cols + i] = thr - tone - 1e-4
-    }
+    // Each cell locks onto the wallpaper's bit at its own moment, so the
+    // dither resolves dot by dot rather than all at once.
+    const r = api.rng(0x0eb)
+    this.bits = Uint8Array.from(m.bits.join(""), b => b === "1")
+    this.order = Float32Array.from(this.bits, () => r())
   },
 
   // Shading as ambient `a`, light direction `dir` (unit), strength `k` and gamma.
@@ -46,8 +41,9 @@ themotion.scene({
     return (m.bayer[(j + m.phase[1]) % 4][(i + m.phase[0]) % 4] + 0.5) / 16
   },
 
-  // Dither the sphere: scale s about its centre, light L, nudges weighted by w.
-  orb(ctx, api, s, L, w) {
+  // Dither the sphere: scale s about its centre, light L, with the fraction
+  // `locked` of cells showing the wallpaper's own bit.
+  orb(ctx, api, s, L, locked) {
     const m = api.meta, c = m.cell, [ox, oy] = m.origin, [cx, cy, R] = this.sphere, r = R * s
     const { x0, y0, cols, rows } = this.box
     if (r < 0.5) return
@@ -55,10 +51,10 @@ themotion.scene({
     ctx.beginPath()
     for (let j = Math.floor(cy - r); j <= Math.ceil(cy + r); j++) {
       for (let i = Math.floor(cx - r); i <= Math.ceil(cx + r); i++) {
-        let tone = this.tone(i, j, cx, cy, r, L)
-        const bi = i - x0, bj = j - y0
-        if (w > 0 && bi >= 0 && bj >= 0 && bi < cols && bj < rows) tone += w * this.nudge[bj * cols + bi]
-        if (tone > this.threshold(i, j, m)) ctx.rect(ox + i * c, oy + j * c, c, c)
+        const bi = i - x0, bj = j - y0, k = bj * cols + bi
+        const ink = locked > 0 && bi >= 0 && bj >= 0 && bi < cols && bj < rows && this.order[k] < locked
+          ? this.bits[k] : this.tone(i, j, cx, cy, r, L) > this.threshold(i, j, m)
+        if (ink) ctx.rect(ox + i * c, oy + j * c, c, c)
       }
     }
     ctx.fill()
@@ -91,11 +87,12 @@ themotion.scene({
     const tip = ease.inOutCubic(seg(t, 2.3, 3.1)), p = seg(t, 2.3, 4.3)
     const swing = lerp(1.3 * Math.exp(-3.2 * p) * Math.cos(api.TAU * 1.1 * p), 0, ease.inOutCubic(seg(t, 3.9, 4.4)))
     const L = this.aim(tip, swing, lerp(0.35, this.final.a, tip))
-    this.orb(ctx, api, s, L, ease.inOutCubic(seg(t, 3.9, 4.4)))
+    // As the swing dies down, the dots lock onto the wallpaper's one by one.
+    this.orb(ctx, api, s, L, seg(t, 3.3, 4.8))
 
     // The dither is now the wallpaper's cell for cell; fade onto the still so
     // its ink fringe arrives gently, well before the handoff.
-    const f = ease.inOutCubic(seg(t, 4.35, 4.85))
+    const f = ease.inOutCubic(seg(t, 4.6, 4.95))
     if (f > 0) { ctx.globalAlpha = f; ctx.drawImage(api.still, 0, 0, W, H); ctx.globalAlpha = 1 }
   },
 
