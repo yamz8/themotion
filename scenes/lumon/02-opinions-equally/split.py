@@ -8,8 +8,9 @@ lift: the colour each adds on top of the backdrop, drawn with "lighter".
 Layers: backdrop (the field without the glowing parts), logo, word0..6
 (OMARCHY), tag0.. (the tagline's letters), term0.. and branch0.. (the labels'
 characters), data (the binary rows) and rule.
-Meta: the screen's flat edge colour, the logo's box, the data band's rows,
-the glyph counts, the tagline's word breaks and the ink colour.
+Meta: the screen's flat edge colour, the glowing panel's box, the logo's box,
+the data band's rows, the glyph counts, the tagline's word breaks and the ink
+colour.
 """
 import numpy as np
 from scipy import ndimage as nd
@@ -106,6 +107,11 @@ def split(image, layers):
     backdrop = np.where(hole[..., None], np.minimum(fill(image, hole), image), image)
     backdrop = np.round(np.clip(backdrop, 0, 255))
     layers.save("backdrop", np.ones((H, W)), backdrop, pad=0)
+    # The glowing panel: where the backdrop rises over the flat edge colour,
+    # inside the vignette.
+    lit = (backdrop - flat).max(-1) > 8
+    py, px = np.nonzero(lit.any(1))[0], np.nonzero(lit.any(0))[0]
+    panel = [int(px[0]), int(py[0]), int(px[-1]) + 1, int(py[-1]) + 1]
 
     lift = image - backdrop
     for name, m in parts.items():
@@ -115,7 +121,7 @@ def split(image, layers):
     gaps = [boxes[b[0] - 1][1].start - boxes[a[-1] - 1][1].stop for a, b in zip(tags, tags[1:])]
     breaks = sorted(np.argsort(gaps)[-3:] + 1)
     layers.meta.update(
-        flat=[float(v) for v in flat], logo=[lx.start, ly.start, lx.stop, ly.stop],
+        flat=[float(v) for v in flat], panel=panel, logo=[lx.start, ly.start, lx.stop, ly.stop],
         data=list(data_band), words=len(words), tags=len(tags), term=len(term), branch=len(branch),
         breaks=[int(b) for b in breaks], ink=[float(v) for v in ink],
     )

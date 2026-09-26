@@ -1,14 +1,15 @@
 // Enjoy each opinion equally.
-// An old terminal boots: the tube switches on as a line across the middle that
-// opens into the screen. The status labels type themselves on behind a block
-// cursor, the data rows print left to right, and the mark loads row by row like
-// a picture coming down a slow line. OMARCHY types on a letter at a time, the
+// An old terminal boots: the glowing panel inside the vignette warms up in
+// steps and a band of scanlines runs down it, drawing the screen in. The
+// status labels type themselves on behind a block cursor, the data rows print
+// left to right, and the mark loads row by row like a picture coming down a
+// slow line. OMARCHY types on a letter at a time, the
 // tagline follows behind the cursor, and the rule below fills in steps like a
 // progress bar. No glows or flares: everything arrives in hard steps.
 //
 // Every glowing layer is light added to the field, so it is drawn "lighter".
 themotion.scene({
-  beats: { tube: 0.05, labels: 0.55, data: 0.9, mark: 1.35, OMARCHY: 2.4, tagline: 3.1, rule: 3.85 },
+  beats: { panel: 0.05, scan: 0.35, labels: 0.55, data: 0.9, mark: 1.35, OMARCHY: 2.4, tagline: 3.1, rule: 3.85 },
 
   setup(api) {
     const { meta, layers } = api
@@ -19,32 +20,41 @@ themotion.scene({
     this.tags = run("tag", meta.tags)
     this.term = run("term", meta.term)
     this.branch = run("branch", meta.branch)
+    // The panel's glow: how far the backdrop rises over the flat edge colour.
+    const back = layers.backdrop
+    this.glow = Object.assign(document.createElement("canvas"), { width: back.img.width, height: back.img.height })
+    const g = this.glow.getContext("2d")
+    g.drawImage(back.img, 0, 0)
+    g.globalCompositeOperation = "difference"; g.fillStyle = this.flat; g.fillRect(0, 0, this.glow.width, this.glow.height)
   },
 
-  // A bright horizontal beam, fading to either side of `y`.
-  beam(ctx, y, x0, x1, thick, strength) {
-    if (strength <= 0.005 || x1 <= x0) return
-    const g = ctx.createLinearGradient(0, y - thick, 0, y + thick)
-    g.addColorStop(0, `rgba(${WHITE},0)`)
-    g.addColorStop(0.5, `rgba(${WHITE},${strength})`)
-    g.addColorStop(1, `rgba(${WHITE},0)`)
-    ctx.fillStyle = g
-    ctx.fillRect(x0, y - thick, x1 - x0, thick * 2)
-  },
-
-  // The tube switches on: a line grows across the middle, then opens into the
-  // field.
-  drawTube(ctx, t, api) {
-    const { seg, ease, W, H } = api, cy = H / 2
+  // The panel wakes inside its vignette: its glow comes up in hard steps,
+  // then a band of scanlines runs down it and leaves the full picture behind.
+  // Everything is weighted by the panel's own glow over the flat edge colour,
+  // so nothing reaches the desktop's edges.
+  drawPanel(ctx, t, api) {
+    const { seg, W, H } = api, [, top, , bottom] = api.meta.panel, row = 24
     ctx.fillStyle = this.flat; ctx.fillRect(0, 0, W, H)
-    const line = ease.outCubic(seg(t, 0.05, 0.35)), open = ease.inOutCubic(seg(t, 0.3, 0.85))
-    const half = open * H / 2
-    if (open > 0) {
-      ctx.save(); ctx.beginPath(); ctx.rect(0, cy - half, W, half * 2); ctx.clip(); api.put("backdrop"); ctx.restore()
+    const dim = Math.floor(seg(t, 0.05, 0.4) * 4) / 4 * 0.4
+    const scan = seg(t, 0.35, 1.0)
+    const y = top + Math.floor(scan * (bottom - top) / row) * row
+    ctx.globalAlpha = dim; api.put("backdrop"); ctx.globalAlpha = 1
+    if (scan <= 0) return
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, y); ctx.clip()
+    api.put("backdrop"); ctx.restore()
+    if (scan >= 1) return
+    // The band: bright scanlines at the edge being drawn, and the rows just
+    // drawn still lit above it, stepping down as they cool.
+    ctx.save(); ctx.globalCompositeOperation = "lighter"
+    const lines = (y0, n, passes) => {
+      ctx.save(); ctx.beginPath()
+      for (let i = 0; i < n; i++) ctx.rect(0, y0 + i * row / 2, W, row / 4)
+      ctx.clip(); for (let i = 0; i < passes; i++) ctx.drawImage(this.glow, 0, 0)
+      ctx.restore()
     }
-    ctx.globalCompositeOperation = "lighter"
-    const fade = 1 - seg(t, 0.75, 1.1)
-    if (open < 1) this.beam(ctx, cy, W / 2 * (1 - line), W / 2 * (1 + line), 14 + 30 * open, 0.9 * fade)
+    lines(y, 4, 8)
+    for (let k = 1; k <= 3; k++) lines(y - k * 2 * row, 4, 4 - k)
+    ctx.restore()
   },
 
   // A block cursor after the last glyph typed, blinking once the line is done.
@@ -114,7 +124,7 @@ themotion.scene({
   },
 
   enter(ctx, t, api) {
-    this.drawTube(ctx, t, api)
+    this.drawPanel(ctx, t, api)
     ctx.globalCompositeOperation = "lighter"
     this.drawData(ctx, t, api)
     this.drawLabels(ctx, t, api)
@@ -125,5 +135,3 @@ themotion.scene({
     ctx.globalCompositeOperation = "source-over"
   },
 })
-
-const WHITE = "242,252,255"
