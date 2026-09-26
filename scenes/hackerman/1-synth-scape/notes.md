@@ -4,8 +4,8 @@ A cyan horizon line draws out across the dark from the valley. The grid floor un
 
 | Time | Beat |
 |---|---|
-| 0.35 | The horizon line draws out from the valley |
-| 1.0 | The floor unrolls toward the viewer |
+| 0.35 | A flare opens at the valley and the horizon line draws out from it |
+| 0.85 | The floor unrolls toward the viewer out of the flare |
 | 1.7 | The left range springs up; the right follows at 1.95 |
 | 2.2 | The sun rises through the valley and the sky dawns |
 | 3.7 | A scan pulse runs along the wireframe |

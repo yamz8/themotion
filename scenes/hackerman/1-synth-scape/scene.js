@@ -5,7 +5,7 @@
 // dawns, and a scan pulse runs out along the wireframe before it settles.
 
 // Timings in seconds, and the void under the horizon (Hackerman's darker background).
-const LINE = 0.35, FLOOR = 1.0, LEFT = 1.7, RIGHT = 1.95, SUN = 2.2, PULSE = 3.7
+const LINE = 0.35, FLOOR = 0.85, LEFT = 1.7, RIGHT = 1.95, SUN = 2.2, PULSE = 3.7
 const VOID = "#06060c"
 
 // A spring up with one clear overshoot, landing exactly on 1.
@@ -64,7 +64,7 @@ themotion.scene({
     ctx.fillRect(0, hy, W, H - hy)
 
     // The terrain: the floor unrolls down, then each range springs up.
-    const floor = ease.outCubic(seg(t, FLOOR, FLOOR + 1.0))
+    const floor = ease.inOutCubic(seg(t, FLOOR, FLOOR + 1.2))
     const left = rise(ease, seg(t, LEFT, LEFT + 1.3))
     const right = rise(ease, seg(t, RIGHT, RIGHT + 1.3))
     if (floor === 1 && left === 1 && right === 1) {
@@ -76,8 +76,9 @@ themotion.scene({
     }
 
     // The horizon line draws out from the valley, then hands over to the floor.
-    const reach = ease.outExpo(seg(t, LINE, LINE + 0.7)) * Math.max(this.valley, W - this.valley)
-    const lineA = seg(t, LINE, LINE + 0.1) * (1 - ease.inOutCubic(seg(t, FLOOR + 0.2, FLOOR + 0.8)))
+    const drawn = ease.inOutCubic(seg(t, LINE, LINE + 0.8))
+    const reach = drawn * Math.max(this.valley, W - this.valley)
+    const lineA = ease.outCubic(seg(t, LINE, LINE + 0.25)) * (1 - ease.inOutCubic(seg(t, FLOOR + 0.2, FLOOR + 0.8)))
     if (lineA > 0) {
       const x0 = Math.max(0, this.valley - reach), x1 = Math.min(W, this.valley + reach)
       const g = ctx.createLinearGradient(0, hy - 60, 0, hy + 60)
@@ -88,12 +89,23 @@ themotion.scene({
       ctx.fillRect(x0, hy - 60, x1 - x0, 120)
       ctx.fillStyle = `rgba(${this.line},${lineA})`
       ctx.fillRect(x0, hy - 4, x1 - x0, 8)
-      blocks.glow(ctx, this.valley, hy, 260, "220,255,255", 0.8 * lineA * (1 - seg(t, LINE, LINE + 0.9)))
+    }
+
+    // A flare where the line starts: it stretches out along the line as the
+    // line draws, then pours into the valley as the floor unrolls from it.
+    const flare = ease.outCubic(seg(t, LINE, LINE + 0.3)) * (1 - ease.inOutCubic(seg(t, FLOOR, FLOOR + 0.6)))
+    if (flare > 0.005) {
+      const base = ctx.getTransform()
+      ctx.translate(this.valley, hy)
+      ctx.scale(1 + 5 * drawn, 1 - 0.5 * drawn + 0.6 * floor)
+      blocks.glow(ctx, 0, 0, 300, this.line, 0.7 * flare)
+      blocks.glow(ctx, 0, 0, 90, "220,255,255", 0.6 * flare)
+      ctx.setTransform(base)
     }
 
     // The floor's leading edge glows as it unrolls.
     if (floor > 0 && floor < 1) {
-      const y = hy + (H - hy) * floor, a = 1 - floor
+      const y = hy + (H - hy) * floor, a = Math.sin(Math.PI * floor)
       ctx.fillStyle = `rgba(${this.line},${0.8 * a})`
       ctx.fillRect(0, y - 3, W, 6)
     }
