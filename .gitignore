@@ -5,3 +5,4 @@ __pycache__/
 uv.lock
 package-lock.json
 CLAUDE.local.md
+.claude/worktrees/
