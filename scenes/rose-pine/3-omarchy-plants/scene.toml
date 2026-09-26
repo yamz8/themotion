@@ -1,0 +1,7 @@
+title = "Rose Pine Omarchy plants"
+theme = "rose-pine"
+wallpaper = "3-omarchy-plants.webp"
+pattern = "omarchy-intro@1"
+
+[defaults]
+fade_in = 0.8   # cream paper: a 0.6 s fade would step more than 12 levels a frame
