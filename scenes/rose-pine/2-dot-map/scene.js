@@ -1,5 +1,5 @@
 // Rose Pine dot map.
-// A seed dot pops at the heart of the band with a ring. A front spreads out
+// A seed dot pops at the heart of the band. A front spreads out
 // from it along the band, and every dot it passes spins into place on a
 // spring. A ripple runs out through the grid like a drop in water, then the
 // darkest dots twinkle before the map settles.
@@ -49,11 +49,8 @@ themotion.scene({
   },
 
   enter(ctx, t, api) {
-    const { W, H, seg, ease, blocks } = api, base = ctx.getTransform()
+    const { W, H, seg, ease } = api, base = ctx.getTransform()
     ctx.fillStyle = this.bg; ctx.fillRect(0, 0, W, H)
-
-    // A soft halo in its own colour behind the seed as it pops.
-    blocks.glow(ctx, this.seed.x, this.seed.y, 100, this.seed.color, 0.4 * Math.sin(Math.PI * seg(t, SEED, SEED + 0.8)))
 
     // The ripple: a packet travelling out from the centre, gone by 4.4 s.
     const front = (t - RIPPLE) * RIPPLE_SPEED, calm = 1 - ease.inOutCubic(seg(t, 3.6, 4.4))
@@ -70,6 +67,8 @@ themotion.scene({
         s *= 1 + 0.75 * env
         push += 18 * Math.sin(k * 2.2) * env
       }
+      // The seed swells big as it pops, then springs back to size as the front leaves it.
+      if (d === this.seed) s *= 1 + 3 * (1 - ease.spring(seg(t, SEED + 0.25, SEED + 1.6), 4.5, 11))
       if (d.twinkle !== null) {
         // A twinkle: a swell with a twist out to 45 degrees and back.
         const q = Math.sin(Math.PI * seg(t, d.twinkle, d.twinkle + TWINKLE))
@@ -80,11 +79,6 @@ themotion.scene({
       this.dot(ctx, base, d, s, rot, d.ux * push, d.uy * push)
     }
     ctx.setTransform(base)
-
-    // The seed's ring as it pops.
-    ctx.globalCompositeOperation = "multiply"
-    blocks.shockwave(ctx, this.seed.x, this.seed.y, 10, 900, this.seed.color, seg(t, SEED, SEED + 1.1), 8)
-    ctx.globalCompositeOperation = "source-over"
   },
 
   // A slow swell that breathes out from the centre and returns every idleLength.
