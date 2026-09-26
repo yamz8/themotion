@@ -156,6 +156,16 @@ def cmd_render(scene):
     run(["node", os.path.join(LIB, "render.mjs"), page, os.path.join(scene.build, "frames")])
 
 
+def output_size(scene):
+    """The wallpaper's proportions at the smallest size covering the pattern's
+    width x height, rounded to even numbers for yuv420p."""
+    with open(os.path.join(scene.layers, "layers.json")) as f:
+        meta = json.load(f)
+    W, H = meta["width"], meta["height"]
+    k = max(scene.spec["width"] / W, scene.spec["height"] / H)
+    return 2 * round(W * k / 2), 2 * round(H * k / 2)
+
+
 def cmd_finish(scene, install=False):
     s, req = scene.spec, scene.pattern["requires"]
     frames = os.path.join(scene.build, "frames")
@@ -164,11 +174,12 @@ def cmd_finish(scene, install=False):
     out = scene.output
     os.makedirs(os.path.dirname(out), exist_ok=True)
     frames_total = len(glob.glob(os.path.join(frames, "*.png")))
+    w, h = output_size(scene)
     settled = min(frames_total - 1, int(s["settle"] * s["fps"]))
     # Encoded untagged, BT.709 limited range: what Omarchy's player assumes for HD.
     assert req["color"] == "bt709-tv" and req["codec"] == "h264"
     run(["ffmpeg", "-v", "error", "-y", "-framerate", str(s["fps"]), "-i", os.path.join(frames, "%04d.png"),
-         "-vf", f"scale={s['width']}:{s['height']}:flags=bicubic:out_color_matrix=bt709:out_range=tv,format={req['pixel_format']}",
+         "-vf", f"scale={w}:{h}:flags=bicubic:out_color_matrix=bt709:out_range=tv,format={req['pixel_format']}",
          "-an", "-c:v", "libx264", "-preset", "slow", "-crf", str(s["crf"]),
          "-x264-params", f"zones={settled}," + str(frames_total - 1) + f",q={s['settled_q']}", "-profile:v", "high",
          "-pix_fmt", req["pixel_format"], "-movflags", "+faststart", out])

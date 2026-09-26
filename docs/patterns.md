@@ -33,12 +33,13 @@ Omarchy plays a theme's intro once per boot, in place of the wallpaper, then han
 | Ends on the exact wallpaper | The shell swaps to the still right after the last frame, so any difference jumps |
 | BT.709, limited range, h264, yuv420p | Omarchy's player reads HD video as BT.709; anything else shifts colour at the handoff |
 | 5 to 7 seconds | Long enough to register, short enough not to delay the desktop |
+| The wallpaper's proportions | OWE crops video to fill the screen just as the shell crops the still; matching proportions make both crops identical on any screen |
 
 | Default | Value |
 |---|---|
 | `length` | 6.0 s |
 | `fps` | 30 |
-| `width` × `height` | 1920 × 1080, like the other intros in Omarchy |
+| `width` × `height` | 1920 × 1080: the screen the video must cover. The video keeps the wallpaper's proportions at the smallest size that covers it, so a 3:2 wallpaper renders at 1920 × 1280 |
 | `fade_in` | 0.6 s |
 | `settle` | 5.0 s: the scene's motion should be finished by here |
 | `handoff` | 0.3 s blend from `settle` into the exact wallpaper |

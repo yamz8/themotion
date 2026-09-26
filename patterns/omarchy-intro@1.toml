@@ -23,12 +23,19 @@ color = "bt709-tv"
 codec = "h264"
 pixel_format = "yuv420p"
 length_range = [5.0, 7.0]
+# OWE crops video to cover the screen (panscan) just as the shell crops the
+# still, so the video keeps the wallpaper's proportions and both crops match
+# on any screen shape. A 16:9 video of a 3:2 wallpaper would be squeezed or
+# cropped differently at the handoff.
+shape = "wallpaper"
 
 # Defaults are taste. A scene overrides them in its scene.toml, and a single
 # render can override them with --set key=value.
 [defaults]
 length = 6.0
 fps = 30
+# The screen the video must cover at full detail; the video keeps the
+# wallpaper's proportions at the smallest size that covers it.
 width = 1920
 height = 1080
 # Seconds to fade in from black.
@@ -53,3 +60,5 @@ fade_max_step = 12
 # both encoded the same way.
 end_max_mean_diff = 0.3
 end_max_diff = 24
+# Largest difference in proportions (width / height) from the wallpaper.
+shape_max_diff = 0.01

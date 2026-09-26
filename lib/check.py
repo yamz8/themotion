@@ -55,6 +55,11 @@ def check(video, wallpaper, pattern, spec):
     report("length", lo <= duration <= hi + 0.5 / fps, f"{duration:.2f} s (allowed {lo}-{hi} s)")
     report("codec", stream["codec_name"] == req["codec"] and stream["pix_fmt"] == req["pixel_format"],
            f"{stream['codec_name']} {stream['pix_fmt']}")
+    from PIL import Image
+    with Image.open(wallpaper) as im:
+        ww, wh = im.size
+    shape = abs(w / h - ww / wh) / (ww / wh)
+    report("shape", shape <= th["shape_max_diff"], f"{w}x{h} for a {ww}x{wh} wallpaper ({shape * 100:.1f}% off its proportions)")
     tagged = stream.get("color_space", "unknown")
     report("color", tagged in ("unknown", "bt709"), f"colour matrix {tagged or 'untagged'} (Omarchy reads HD as BT.709)")
 
