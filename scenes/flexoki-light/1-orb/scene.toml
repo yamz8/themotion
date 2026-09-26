@@ -1,0 +1,7 @@
+title = "Flexoki orb"
+theme = "flexoki-light"
+wallpaper = "1-orb.webp"
+pattern = "omarchy-intro@1"
+
+[defaults]
+fade_in = 0.9   # the paper is bright; a slower fade keeps each step under the check's limit
