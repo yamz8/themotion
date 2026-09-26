@@ -59,6 +59,7 @@ Paintings and photos don't split into clean layers; for those, see [docs/real-fo
 | Flexoki Light | `1-orb`: Orb lit by a swinging light | omarchy-intro@1 |
 | Lumon | `01-united-in-severance`: United in severance | omarchy-intro@1 |
 | Lumon | `02-opinions-equally`: Enjoy each opinion equally | omarchy-intro@1 |
+| Rose Pine | `2-dot-map`: The dot map spins in from its centre | omarchy-intro@1 |
 
 ## License
 

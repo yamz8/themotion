@@ -1,0 +1,8 @@
+title = "Rose Pine dot map"
+theme = "rose-pine"
+wallpaper = "2-dot-map.webp"
+pattern = "omarchy-intro@1"
+
+[defaults]
+fade_in = 0.8   # cream paper: a 0.6 s fade would step more than 12 levels a frame
+crf = 20        # 11k small dots churn during the motion; the settled frames get settled_q
