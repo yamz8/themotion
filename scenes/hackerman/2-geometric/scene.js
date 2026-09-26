@@ -1,12 +1,12 @@
 // Hackerman geometric.
-// A seed of light kindles in the dense core of the network. The picture,
+// One triangle of the network draws itself in its dense core. The picture,
 // cut into shards along its own vertices, bursts out of it: each shard flies
 // out spinning and small, springs into place and flashes as it locks on,
 // the core first and the loose strands in the upper left last.
 
 // Timings in seconds: the seed, the first and last shard launches, and how
 // long a shard flies.
-const SEED = 0.25, FIRST = 0.75, LAST = 3.25, FLIGHT = 1.15
+const SEED = 0.2, FIRST = 0.9, LAST = 3.25, FLIGHT = 1.15
 const LIGHT = "124,248,247", SPARK = "210,252,255"
 
 themotion.scene({
@@ -64,9 +64,48 @@ themotion.scene({
     ctx.restore()
   },
 
+  // The seed, one triangle of the network in the core: its three dots pop
+  // in, its lines draw between them, it fills and flashes, then flies apart
+  // as the shards burst out of it.
+  seed(ctx, t, api) {
+    const { seg, ease } = api, [cx, cy] = this.core
+    const burst = ease.outCubic(seg(t, FIRST, FIRST + 0.45))
+    if (t < SEED || burst >= 1) return
+    const r = 170 * (1 + 1.5 * burst), turn = 0.35 * ease.outCubic(seg(t, SEED, FIRST)) + 0.6 * burst
+    const v = [0, 1, 2].map(i => {
+      const a = turn - Math.PI / 2 + (i * 2 * Math.PI) / 3
+      return [cx + r * Math.cos(a), cy + r * Math.sin(a)]
+    })
+    const fade = 1 - burst
+    ctx.save()
+
+    const fill = ease.outCubic(seg(t, FIRST - 0.2, FIRST))
+    if (fill > 0) {
+      ctx.fillStyle = `rgba(${LIGHT},${0.45 * fill * fade})`
+      ctx.beginPath(); ctx.moveTo(...v[0]); ctx.lineTo(...v[1]); ctx.lineTo(...v[2]); ctx.closePath(); ctx.fill()
+    }
+
+    ctx.strokeStyle = `rgba(${LIGHT},${fade})`
+    ctx.lineWidth = 7
+    ctx.lineCap = "round"
+    for (let i = 0; i < 3; i++) {
+      const e = ease.outCubic(seg(t, SEED + 0.12 + 0.1 * i, SEED + 0.32 + 0.1 * i))
+      if (e <= 0) continue
+      const [x0, y0] = v[i], [x1, y1] = v[(i + 1) % 3]
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + (x1 - x0) * e, y0 + (y1 - y0) * e); ctx.stroke()
+    }
+
+    ctx.fillStyle = `rgba(${SPARK},${fade})`
+    v.forEach(([x, y], i) => {
+      const pop = seg(t, SEED + 0.08 * i, SEED + 0.08 * i + 0.2)
+      if (pop <= 0) return
+      ctx.beginPath(); ctx.arc(x, y, 11 * ease.outBack(pop, 3), 0, api.TAU); ctx.fill()
+    })
+    ctx.restore()
+  },
+
   enter(ctx, t, api) {
     const { W, H, seg, ease, blocks } = api
-    const [cx, cy] = this.core
 
     ctx.fillStyle = "#000"
     ctx.fillRect(0, 0, W, H)
@@ -76,10 +115,7 @@ themotion.scene({
     // in flight they glow, and cut edges sum back to the exact picture.
     ctx.globalCompositeOperation = "lighter"
 
-    // The seed swells in the core, bursts as the shards leave, and fades.
-    const swell = ease.outCubic(seg(t, SEED, FIRST + 0.1)), fade = 1 - ease.inOutCubic(seg(t, FIRST, FIRST + 1.6))
-    blocks.glow(ctx, cx, cy, 120 + 700 * swell, LIGHT, 0.6 * swell * fade)
-    blocks.glow(ctx, cx, cy, 40 + 160 * swell, SPARK, swell * fade)
+    this.seed(ctx, t, api)
 
     for (const s of this.shards) {
       const p = seg(t, s.start, s.start + FLIGHT)
