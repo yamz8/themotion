@@ -22,7 +22,8 @@ class LayerWriter:
         os.makedirs(outdir, exist_ok=True)
 
     def save(self, name, alpha, color, pad=2):
-        """Save a flat-colour shape whose coverage is `alpha` (H, W, 0..1)."""
+        """Save a shape whose coverage is `alpha` (H, W, 0..1) in `color`: one
+        RGB value for a flat shape, or an (H, W, 3) array for per-pixel colour."""
         ys, xs = np.nonzero(alpha > 0)
         if len(ys) == 0:
             raise ValueError(f"layer {name} is empty")
@@ -30,7 +31,8 @@ class LayerWriter:
         y0, y1 = max(0, ys.min() - pad), min(h, ys.max() + 1 + pad)
         x0, x1 = max(0, xs.min() - pad), min(w, xs.max() + 1 + pad)
         rgba = np.zeros((y1 - y0, x1 - x0, 4), np.uint8)
-        rgba[..., :3] = np.round(color).astype(np.uint8)
+        color = np.broadcast_to(np.asarray(color, float), (h, w, 3))
+        rgba[..., :3] = np.round(np.clip(color[y0:y1, x0:x1], 0, 255)).astype(np.uint8)
         rgba[..., 3] = np.round(np.clip(alpha[y0:y1, x0:x1], 0, 1) * 255)
         Image.fromarray(rgba).save(os.path.join(self.outdir, f"{name}.png"), optimize=True)
         self.meta["layers"].append({"name": name, "x": int(x0), "y": int(y0), "w": int(x1 - x0), "h": int(y1 - y0)})
