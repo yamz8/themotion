@@ -2,21 +2,21 @@
 cells. Its dark side is a clean circular edge; the lit side dissolves into the
 paper.
 
-Nothing moves as a picture here: the scene re-dithers the orb on the same grid
-under a moving light. So the split records the grid and its cells, and fits a
-lit sphere to the dither so the scene can shade it with any light.
+The scene draws only the wallpaper's own ink cells, cut from the still, and
+picks which of them show. So the split records the grid and its cells, and
+fits a lit sphere to the dither so the scene can tell which cells a moving
+light would clear.
 
 Layers: none.
 Meta: paper and ink colours; the grid (cell size, origin, the cells' bounding
-box and their ink bits, row by row); the Bayer phase; the sphere (centre and
-radius, in cells) and its shading, tone = clamp(a + b . normal) ** gamma.
+box and their ink bits, row by row); the sphere (centre and radius, in
+cells) and its shading, tone = clamp(a + b . normal) ** gamma.
 """
 import numpy as np
 from scipy import ndimage as nd
 from scipy.optimize import least_squares
 
 CELL = 4
-BAYER = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]])
 
 
 def split(image, layers):
@@ -58,13 +58,8 @@ def split(image, layers):
         return np.clip(p[0] + p[1] * nx + p[2] * ny + p[3] * nz, 0, 1) ** p[4]
     fit = least_squares(lambda p: (shade(p) - tone)[inside], [0.5, -0.5, -0.5, 0, 1]).x
 
-    # The Bayer phase that best reproduces the cells from the fitted shading.
-    model = np.where(inside, shade(fit), 0)
-    phase = min(((px, py) for px in range(4) for py in range(4)),
-                key=lambda p: ((model > (BAYER[(Y + p[1]) % 4, (X + p[0]) % 4] + 0.5) / 16) != bits).sum())
-
     # The recorded cells cover every ink cell and the whole sphere, so the
-    # scene can correct each cell the shading reaches.
+    # scene can shade each cell the light reaches.
     ys, xs = np.nonzero(bits | inside)
     y0, y1, x0, x1 = ys.min() - 1, ys.max() + 2, xs.min() - 1, xs.max() + 2
 
@@ -73,7 +68,6 @@ def split(image, layers):
         ink=[float(v) for v in ink],
         cell=CELL, origin=[ox, oy], box=[int(x0), int(y0), int(x1), int(y1)],
         bits=["".join("1" if b else "0" for b in row) for row in bits[y0:y1, x0:x1]],
-        bayer=BAYER.tolist(), phase=[int(v) for v in phase],
         sphere=[float(cx), float(cy), float(r)],
         shade=[float(v) for v in fit],
     )
