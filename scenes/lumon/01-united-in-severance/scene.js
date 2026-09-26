@@ -1,9 +1,8 @@
 // United in severance.
 // Each rule arrives in two halves from the screen's edges and joins in the
 // middle. The globe's rim traces itself round from both sides, the parallels
-// open out and the globe spins in, LUMON rises into its band and the O sends
-// out a pulse. The tagline types itself on, and SEVERANCE flickers on like a
-// fluorescent tube.
+// open out and the globe spins in, and LUMON rises into its band. The tagline
+// types itself on, and SEVERANCE flickers on like a fluorescent tube.
 themotion.scene({
   beats: { rules: 0.15, globe: 1.0, spin: 1.8, LUMON: 2.55, typing: 3.55, SEVERANCE: 4.2 },
 
@@ -109,9 +108,9 @@ themotion.scene({
     if (exact > 0) { ctx.globalAlpha = exact; api.put("meridians"); ctx.globalAlpha = 1 }
   },
 
-  // LUMON rises into its band letter by letter; the O sends out a pulse.
+  // LUMON rises into its band letter by letter.
   drawWordmark(ctx, t, api) {
-    const { seg, ease, blocks } = api, [top, bottom] = api.meta.band
+    const { seg, ease } = api, [top, bottom] = api.meta.band
     ctx.save(); ctx.beginPath(); ctx.rect(api.meta.cx - api.meta.a, top - 4, api.meta.a * 2, bottom - top + 8); ctx.clip()
     this.letters.forEach((l, i) => {
       const start = 2.55 + i * 0.09, p = seg(t, start, start + 0.55)
@@ -119,9 +118,6 @@ themotion.scene({
       api.put(l.name, 0, (1 - ease.outBack(p, 1.6)) * (bottom - top + 12))
     })
     ctx.restore()
-    const o = this.letters[3], ox = o.x + o.w / 2, oy = o.y + o.h / 2
-    blocks.glow(ctx, ox, oy, 150, WHITE, 0.55 * Math.exp(-Math.pow((t - 3.3) / 0.14, 2)))
-    blocks.shockwave(ctx, ox, oy, 50, 440, this.ink, seg(t, 3.25, 4.25), 4)
   },
 
   // UNITED IN types on behind a block cursor; SEVERANCE flickers on.

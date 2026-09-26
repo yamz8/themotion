@@ -1,6 +1,6 @@
 # United in severance
 
-Each of the five rules arrives in two halves from the screen's edges and joins in the middle. The globe's rim traces round from the left in both directions and closes on the right, the parallels open out, and the globe spins in half a turn and settles. LUMON rises into its band letter by letter and the O sends out a pulse, then UNITED IN types itself on behind a block cursor and SEVERANCE flickers on like a fluorescent tube.
+Each of the five rules arrives in two halves from the screen's edges and joins in the middle. The globe's rim traces round from the left in both directions and closes on the right, the parallels open out, and the globe spins in half a turn and settles. LUMON rises into its band letter by letter, then UNITED IN types itself on behind a block cursor and SEVERANCE flickers on like a fluorescent tube.
 
 | Time | Beat |
 |---|---|
@@ -9,7 +9,6 @@ Each of the five rules arrives in two halves from the screen's edges and joins i
 | 1.6 | The parallels open out |
 | 1.8 | The globe spins in and rings back |
 | 2.55 | LUMON rises letter by letter |
-| 3.25 | The O pulses |
 | 3.55 | UNITED IN types on |
 | 4.2 | SEVERANCE flickers on |
 | 5.0 | Still; the pattern blends into the exact wallpaper |
