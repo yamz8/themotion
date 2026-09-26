@@ -62,11 +62,12 @@ themotion.scene({
       ctx.save(); ctx.beginPath(); ctx.moveTo(cx, cy)
       ctx.ellipse(cx, cy, a * 2, b * 2, 0, Math.PI - p * Math.PI, Math.PI + p * Math.PI); ctx.closePath()
       ctx.clip(); api.put("ring"); ctx.restore()
+      // A small tight light at each pen tip, no wider than a few strokes.
       if (p < 1) for (const s of [-1, 1]) {
         const phi = Math.PI + s * p * Math.PI
-        blocks.glow(ctx, cx + (a - 5) * Math.cos(phi), cy + (b - 5) * Math.sin(phi), 70, WHITE, 0.8)
+        blocks.glow(ctx, cx + (a - 5) * Math.cos(phi), cy + (b - 5) * Math.sin(phi), 16, WHITE, 0.6)
       }
-      blocks.glow(ctx, cx + a - 5, cy, 220, this.ink, 0.7 * Math.exp(-Math.pow((t - 1.8) / 0.12, 2)) * (t > 1.75))
+      blocks.glow(ctx, cx + a - 5, cy, 22, WHITE, 0.6 * Math.exp(-Math.pow((t - 1.8) / 0.08, 2)) * (t > 1.75))
     }
     const q = ease.outCubic(seg(t, 1.6, 2.15))
     if (q > 0) {
