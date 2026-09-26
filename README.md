@@ -57,6 +57,7 @@ Paintings and photos don't split into clean layers; for those, see [docs/real-fo
 | Catppuccin | `2-waves`: Waves swell from a line | omarchy-intro@1 |
 | Catppuccin | `3-blue-eye`: Blue eye opens | omarchy-intro@1 |
 | Lumon | `01-united-in-severance`: United in severance | omarchy-intro@1 |
+| Lumon | `02-opinions-equally`: Enjoy each opinion equally | omarchy-intro@1 |
 
 ## License
 
