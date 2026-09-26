@@ -163,11 +163,14 @@ def cmd_finish(scene, install=False):
         die("no frames yet; run `themotion render` first")
     out = scene.output
     os.makedirs(os.path.dirname(out), exist_ok=True)
+    frames_total = len(glob.glob(os.path.join(frames, "*.png")))
+    settled = min(frames_total - 1, int(s["settle"] * s["fps"]))
     # Encoded untagged, BT.709 limited range: what Omarchy's player assumes for HD.
     assert req["color"] == "bt709-tv" and req["codec"] == "h264"
     run(["ffmpeg", "-v", "error", "-y", "-framerate", str(s["fps"]), "-i", os.path.join(frames, "%04d.png"),
          "-vf", f"scale={s['width']}:{s['height']}:flags=bicubic:out_color_matrix=bt709:out_range=tv,format={req['pixel_format']}",
-         "-an", "-c:v", "libx264", "-preset", "slow", "-crf", str(s["crf"]), "-profile:v", "high",
+         "-an", "-c:v", "libx264", "-preset", "slow", "-crf", str(s["crf"]),
+         "-x264-params", f"zones={settled}," + str(frames_total - 1) + f",q={s['settled_q']}", "-profile:v", "high",
          "-pix_fmt", req["pixel_format"], "-movflags", "+faststart", out])
     print(f"video: {os.path.relpath(out)}")
     if install:

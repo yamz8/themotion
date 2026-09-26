@@ -37,7 +37,11 @@ fade_in = 0.6
 # into the exact still over `handoff` seconds, then holds it.
 settle = 5.0
 handoff = 0.3
+# x264 quality while things move, and for the settled frames from `settle`
+# on (a fixed quantiser; lower is closer). The settled frames are what the
+# desktop hands over from, so they get more bits than the motion needs.
 crf = 16
+settled_q = 12
 
 # Thresholds `themotion check` uses for the requirements above.
 [check]
