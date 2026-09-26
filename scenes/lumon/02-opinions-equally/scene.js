@@ -2,7 +2,7 @@
 // The terminal warms up like a tube: a line across the middle opens into the
 // screen. The status labels type themselves on and the branch number rolls to
 // 501. The data rows flicker on outward from the middle, the mark resolves
-// cell by cell and sends out a square pulse, and OMARCHY opens letter by
+// cell by cell and lands with a soft glow, and OMARCHY opens letter by
 // letter from its centre line. The tagline's letters light in no particular
 // order, each one equally, and the rule below fills like a progress bar.
 //
@@ -116,10 +116,10 @@ themotion.scene({
     ctx.restore()
   },
 
-  // The mark resolves cell by cell, each cell flaring as it lands, then sends
-  // a square pulse out from its frame.
+  // The mark resolves cell by cell, each cell flaring as it lands, then glows
+  // once as it completes.
   drawMark(ctx, t, api) {
-    const { seg, ease, blocks } = api, [x0, y0, x1, y1] = api.meta.logo
+    const { blocks } = api, [x0, y0, x1, y1] = api.meta.logo
     const lit = this.cells.filter(c => t >= c.on)
     if (!lit.length) return
     ctx.save(); ctx.beginPath()
@@ -133,15 +133,8 @@ themotion.scene({
       ctx.globalAlpha = strength; api.put("logo"); ctx.restore(); ctx.globalAlpha = 1
     }
     const mx = (x0 + x1) / 2, my = (y0 + y1) / 2
-    const land = 2.2, pulse = seg(t, land, land + 0.9)
+    const land = 2.2
     blocks.glow(ctx, mx, my, 900, this.ink, 0.32 * Math.exp(-Math.pow((t - land - 0.05) / 0.16, 2)))
-    if (pulse > 0 && pulse < 1) {
-      const grow = ease.outExpo(pulse) * 520
-      ctx.save(); ctx.globalAlpha = 0.55 * (1 - pulse)
-      ctx.strokeStyle = `rgb(${this.ink})`; ctx.lineWidth = 12 * (1 - pulse) + 2
-      ctx.strokeRect(x0 - grow, y0 - grow * 0.9, x1 - x0 + grow * 2, y1 - y0 + grow * 1.8)
-      ctx.restore()
-    }
   },
 
   // OMARCHY opens letter by letter from its centre line, middle letters first.
