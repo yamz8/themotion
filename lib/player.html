@@ -1,0 +1,117 @@
+<title>{{TITLE}}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Fragment+Mono&display=swap">
+<style>
+:root{
+  --crust:#11111b; --base:#1e1e2e; --surface:#313244; --overlay:#6c7086;
+  --text:#cdd6f4; --accent:#cba6f7; --focus:#f5c2e7;
+  color-scheme:dark;
+}
+html,body{background:var(--crust);color:var(--text)}
+body{font:14px/1.5 "Fragment Mono",ui-monospace,monospace;padding-inline:16px;padding-block:24px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:14px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 24px}
+h1{margin:0;font:800 clamp(22px,3.2vw,32px)/1.05 "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.01em;text-wrap:balance}
+.sub{margin:0;color:var(--overlay);font-size:12.5px}
+.stage{position:relative;width:100%;max-width:100%;aspect-ratio:16/9;background:#000;border-radius:4px;overflow:hidden;outline:1px solid var(--surface)}
+canvas{display:block;width:100%;height:100%}
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+button,select{font:inherit;color:var(--text);background:var(--base);border:1px solid var(--surface);border-radius:4px;padding:7px 12px;cursor:pointer}
+button:hover,select:hover{border-color:var(--overlay)}
+button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--crust)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+#play{min-width:84px}
+#tc{font-variant-numeric:tabular-nums;min-width:15ch}
+.scrub{flex:1 1 260px;min-width:0;display:grid;gap:4px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.beats{position:relative;height:16px;font-size:10.5px;color:var(--overlay)}
+.beats span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px 26px;color:var(--overlay);font-size:12px;border-top:1px solid var(--surface);padding-top:14px}
+.notes b{color:var(--text);font-weight:400;display:block}
+.error{color:var(--focus)}
+@media (max-width:560px){.beats{display:none}}
+</style>
+<div class="wrap">
+  <header>
+    <h1>{{TITLE}}</h1>
+    <p class="sub" id="sub"></p>
+  </header>
+  <div class="stage"><canvas id="cv" aria-label="{{TITLE}} preview"></canvas></div>
+  <div class="bar">
+    <button id="play">Pause</button>
+    <button id="loop" aria-pressed="true">Loop</button>
+    <select id="mode" aria-label="Pattern">
+      <option value="intro">Intro</option>
+      <option value="idle">Idle loop</option>
+    </select>
+    <button id="cmp" aria-pressed="false">Show wallpaper</button>
+    <span id="tc">0.00 s · f 000</span>
+    <div class="scrub">
+      <input id="scrub" type="range" min="0" max="6" step="0.0333333" value="0" aria-label="Scrub the timeline">
+      <div class="beats" id="beats"></div>
+    </div>
+  </div>
+  <div class="notes" id="notes"></div>
+</div>
+{{SCRIPTS}}
+<script>
+(async () => {
+  const config = {{CONFIG}}
+  const q = new URLSearchParams(location.search)
+  const scale = q.has("scale") ? +q.get("scale") : undefined
+  const $ = id => document.getElementById(id)
+  let p
+  try { p = await themotion.boot($("cv"), { ...config, scale }) }
+  catch (e) { $("sub").innerHTML = `<span class="error">${e.message}</span>`; throw e }
+
+  // Offline rendering hook for `themotion render`.
+  window.__themotion = { length: p.length, fps: p.fps, render: t => p.intro(t) }
+  if (q.has("render")) return
+
+  const s = config.spec
+  $("sub").textContent = `${config.pattern} · ${s.length.toFixed(1)} s · ${s.width}×${s.height} · ${s.fps} fps`
+  $("notes").innerHTML = [
+    ["Opens", `from black over ${s.fade_in} s, like the screen just before an intro plays`],
+    ["Lands", `on the exact wallpaper from ${s.settle.toFixed(1)} s, so the handoff to the desktop has no jump`],
+    ["Idle loop", `${p.idleLength} s of gentle motion on the settled picture, for a future looping background`],
+  ].map(([b, t]) => `<div><b>${b}</b>${t}</div>`).join("")
+
+  let mode = "intro", playing = !matchMedia("(prefers-reduced-motion: reduce)").matches, loop = true, cmp = false, cur = 0, t0 = performance.now()
+  const len = () => mode === "intro" ? p.length : p.idleLength
+  const scrub = $("scrub"), tc = $("tc")
+  function beats() {
+    const b = mode === "intro" ? { ...(p.scene.beats || {}), wallpaper: s.settle } : {}
+    $("beats").innerHTML = Object.entries(b).map(([n, v]) => `<span style="left:${v / len() * 100}%">${n}</span>`).join("")
+    scrub.max = len()
+  }
+  function show(t) {
+    cur = t
+    if (cmp) p.still(); else p[mode](t)
+    scrub.value = t
+    tc.textContent = `${t.toFixed(2)} s · f ${String(Math.min(Math.round(len() * p.fps) - 1, Math.floor(t * p.fps))).padStart(3, "0")}`
+  }
+  function tick(now) {
+    if (playing) {
+      let t = (now - t0) / 1000
+      const hold = mode === "intro" ? 0.8 : 0
+      if (t >= len() + hold) {
+        if (loop) { t0 = now; t = 0 } else { playing = false; $("play").textContent = "Play"; t = len() }
+      }
+      show(Math.min(t, len()))
+    }
+    requestAnimationFrame(tick)
+  }
+  $("play").onclick = () => {
+    playing = !playing; $("play").textContent = playing ? "Pause" : "Play"
+    if (playing) { if (cur >= len()) cur = 0; t0 = performance.now() - cur * 1000 }
+  }
+  $("loop").onclick = e => { loop = !loop; e.currentTarget.setAttribute("aria-pressed", loop) }
+  $("cmp").onclick = e => { cmp = !cmp; e.currentTarget.setAttribute("aria-pressed", cmp); show(cur) }
+  $("mode").onchange = e => { mode = e.target.value; beats(); cur = 0; t0 = performance.now(); show(0) }
+  scrub.oninput = () => { playing = false; $("play").textContent = "Play"; show(+scrub.value) }
+  if (!playing) $("play").textContent = "Play"
+  beats()
+  show(playing ? 0 : s.settle + 0.5)
+  requestAnimationFrame(tick)
+})()
+</script>

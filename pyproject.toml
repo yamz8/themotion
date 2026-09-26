@@ -1,0 +1,9 @@
+[project]
+name = "themotion"
+version = "0.1.0"
+description = "Motion for Omarchy themes, made from their wallpapers"
+requires-python = ">=3.11"
+dependencies = ["numpy>=2", "scipy>=1.13", "pillow>=10"]
+
+[tool.uv]
+package = false

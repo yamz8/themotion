@@ -1,0 +1,4 @@
+#!/bin/bash
+# themotion: make motion for Omarchy themes from their wallpapers.
+root=$(dirname "$(dirname "$(realpath "$0")")")
+exec uv run --quiet --project "$root" python "$root/lib/cli.py" "$@"

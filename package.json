@@ -1,0 +1,9 @@
+{
+  "name": "themotion",
+  "private": true,
+  "type": "module",
+  "description": "Motion for Omarchy themes, made from their wallpapers",
+  "dependencies": {
+    "playwright-core": "1.58.0"
+  }
+}

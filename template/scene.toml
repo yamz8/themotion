@@ -1,0 +1,8 @@
+title = "My scene"
+theme = "my-theme"            # the Omarchy theme folder
+wallpaper = "1-my-wallpaper.png" # in the theme's backgrounds/; name this folder after it
+pattern = "omarchy-intro@1"
+
+# Optional overrides of the pattern's defaults (see patterns/)
+# [defaults]
+# fade_in = 1.0

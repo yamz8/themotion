@@ -1,0 +1,51 @@
+# Omarchy boot intro, version 1.
+#
+# Omarchy plays a theme's intro once per boot, in place of the still
+# wallpaper, then hands the desktop back to the still. The shell shows black
+# until the intro's first frame, and swaps to the still right after the last
+# one. See docs/theming.md in Omarchy for the behaviour this spec follows.
+
+name = "omarchy-intro"
+version = 1
+description = "Plays once per boot, fades in from black and lands on the wallpaper."
+output = "intros/{name}.mp4"
+
+# Requirements come from how Omarchy plays the video. Breaking one shows up
+# on screen, so scenes and themes cannot override them; `themotion check`
+# enforces each one.
+[requires]
+# The screen is black just before the intro starts.
+start = "black"
+# The shell swaps to the still right after the last frame.
+end = "still"
+# Omarchy's player treats untagged HD video as BT.709, limited range.
+color = "bt709-tv"
+codec = "h264"
+pixel_format = "yuv420p"
+length_range = [5.0, 7.0]
+
+# Defaults are taste. A scene overrides them in its scene.toml, and a single
+# render can override them with --set key=value.
+[defaults]
+length = 6.0
+fps = 30
+width = 1920
+height = 1080
+# Seconds to fade in from black.
+fade_in = 0.6
+# When the scene's motion should be finished; from here the frame blends
+# into the exact still over `handoff` seconds, then holds it.
+settle = 5.0
+handoff = 0.3
+crf = 16
+
+# Thresholds `themotion check` uses for the requirements above.
+[check]
+# Mean luma (0-255, full range) the first frame may have.
+first_frame_max_luma = 12
+# Largest per-frame jump in mean luma during the fade-in.
+fade_max_step = 12
+# Mean and max absolute difference between the last frame and the still,
+# both encoded the same way.
+end_max_mean_diff = 0.3
+end_max_diff = 24

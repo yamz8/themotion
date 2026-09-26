@@ -1,0 +1,7 @@
+build/
+node_modules/
+.venv/
+__pycache__/
+uv.lock
+package-lock.json
+CLAUDE.local.md
