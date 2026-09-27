@@ -33,7 +33,7 @@ Python and Node dependencies install themselves on first run.
 |---|---|
 | `themotion split <scene>` | Splits the scene's wallpaper into layers under `build/` |
 | `themotion preview <scene> [--open]` | Builds a self-contained preview page with play, scrub, and a wallpaper comparison |
-| `themotion render <scene>` | Draws every frame at the wallpaper's full size in headless Chromium |
+| `themotion render <scene>` | Draws every frame at the wallpaper's full size (or `render_scale` of it) in headless Chromium |
 | `themotion finish <scene> [--install]` | Encodes the video; `--install` copies it into the theme with its wallpaper hash |
 | `themotion check <video> <wallpaper>` | Checks a video against its pattern, whoever made it |
 | `themotion fit <video> <wallpaper>` | Re-finishes a footage intro's ending onto the exact wallpaper, leaving the rest untouched |

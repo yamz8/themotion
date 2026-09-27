@@ -154,7 +154,8 @@ def ensure_node():
 def cmd_render(scene):
     page = cmd_preview(scene)
     ensure_node()
-    run(["node", os.path.join(LIB, "render.mjs"), page, os.path.join(scene.build, "frames")])
+    run(["node", os.path.join(LIB, "render.mjs"), page, os.path.join(scene.build, "frames"),
+         str(scene.spec["render_scale"])])
 
 
 def output_size(scene):

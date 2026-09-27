@@ -49,6 +49,11 @@ handoff = 0.3
 # desktop hands over from, so they get more bits than the motion needs.
 crf = 16
 settled_q = 12
+# The size frames are drawn at, as a fraction of the wallpaper's; the scene
+# still draws in wallpaper pixels. A very large wallpaper (7680x4320) can
+# render at less than full size, as long as the frames stay larger than the
+# video.
+render_scale = 1.0
 
 # Thresholds `themotion check` uses for the requirements above.
 [check]

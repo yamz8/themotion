@@ -13,7 +13,7 @@ Motion for Omarchy themes, made from their wallpapers. Read `README.md` first, t
 
 - `enter(ctx, t, api)` draws the whole frame and depends on nothing but `t`. Use `api.rng(seed)` for randomness.
 - Everything is back in its original place by the pattern's `settle` time; the pattern does the fade from black and the blend into the exact wallpaper.
-- Draw in wallpaper pixels. Rendering happens at the wallpaper's full size, and the video keeps the wallpaper's proportions: never force 16:9, since OWE and the shell both crop to fill the screen.
+- Draw in wallpaper pixels. Rendering happens at the wallpaper's full size (a scene may lower `render_scale` for a very large wallpaper, keeping frames larger than the video), and the video keeps the wallpaper's proportions: never force 16:9, since OWE and the shell both crop to fill the screen.
 - Reach for an existing block in `lib/blocks/` before writing new motion; move motion into a block when a second scene needs it.
 - Never commit wallpapers or layers. Credit the wallpaper's creator in `notes.md` as far as it is known.
 

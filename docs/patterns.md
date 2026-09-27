@@ -45,6 +45,7 @@ Omarchy plays a theme's intro once per boot, in place of the wallpaper, then han
 | `handoff` | 0.3 s blend from `settle` into the exact wallpaper |
 | `crf` | 16: x264 quality while things move; raise it for busy scenes whose files grow large |
 | `settled_q` | 12: fixed quality for the settled frames from `settle` on, so the handoff lands on the exact wallpaper |
+| `render_scale` | 1: the size frames are drawn at, as a fraction of the wallpaper's; lower it only for a very large wallpaper, keeping frames larger than the video |
 
 Installed intros go to `themes/<theme>/intros/<wallpaper>.mp4`, next to a `<wallpaper>.sha256` holding the wallpaper's hash, so Omarchy never plays an intro that ends on a different picture.
 

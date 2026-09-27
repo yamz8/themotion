@@ -1,0 +1,9 @@
+title = "Layers deep"
+theme = "vantablack"
+wallpaper = "2-layers-deep.webp"
+pattern = "omarchy-intro@1"
+
+[defaults]
+# 7680x4320: full-size frames run the renderer out of memory; half size is
+# still twice the video's.
+render_scale = 0.5

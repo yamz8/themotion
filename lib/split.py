@@ -116,3 +116,53 @@ def unmix(image, backdrop, ink):
     alpha = np.clip(lift.max(-1), 0, 1)
     color = backdrop + (image - backdrop) / np.maximum(alpha, 1e-3)[..., None]
     return alpha, np.clip(color, 0, 255)
+
+
+def papercut(image, scale, edge, small):
+    """Pieces of a papercut picture, cut on its sharp paper edges.
+
+    Paper edges are where the log of the brightness jumps, while soft shadows
+    stay under `edge` (a Sobel gradient at 1/`scale` size, where WebP's blocks
+    are gone). Pieces smaller than `small` px at that size are slivers of an
+    edge and go to their nearest neighbour, so the pieces tile the picture.
+    Returns the piece labels at 1/`scale` size, 0 to n-1; the pixels away from
+    any edge, where brightness can be trusted; and the log brightness."""
+    lum = np.log1p(nd.zoom(image.mean(-1), 1 / scale, order=1))
+    grad = np.hypot(nd.sobel(lum, 0), nd.sobel(lum, 1))
+    labels, n = nd.label(~nd.binary_dilation(grad > edge, iterations=2))
+    sizes = nd.sum(np.ones_like(labels), labels, range(1, n + 1))
+    keep = [i + 1 for i in range(n) if sizes[i] >= small]
+    known = np.isin(labels, keep)
+    _, (iy, ix) = nd.distance_transform_edt(~known, return_indices=True)
+    lut = np.zeros(n + 1, np.int32)
+    lut[keep] = np.arange(len(keep))
+    known &= ~nd.binary_dilation(~known, iterations=1)
+    return lut[labels[iy, ix]], known, lum
+
+
+def stack_order(labels, known, lum, near=3, far=12):
+    """Papercut pieces sorted deepest first, from which side of each edge is
+    shadowed: in a band `near` to `far` px from the edge between two pieces,
+    the piece on top is lit and the one beneath is in its shadow. Returns the
+    order and the weighted comparisons, above[a, b] > 0 when a lies on b."""
+    m = labels.max() + 1
+    side = {}
+    for a in range(m):
+        mine = labels == a
+        band = nd.binary_dilation(mine, iterations=far) & ~nd.binary_dilation(mine, iterations=near) & known
+        for b in np.unique(labels[band]):
+            if b != a:
+                zone = band & (labels == b)
+                side[(b, a)] = (lum[zone].mean(), zone.sum())  # b's side of its edge with a
+    above = np.zeros((m, m))
+    for (b, a), (v, count) in side.items():
+        if (a, b) in side:
+            above[a, b] = (side[(a, b)][0] - v) * min(count, side[(a, b)][1])
+    # Repeatedly take the piece with the least evidence of lying on any piece
+    # still left: a topological sort that breaks a cycle at its weakest link.
+    left, order = set(range(m)), []
+    while left:
+        k = min(left, key=lambda a: (sum(max(above[a, b], 0) for b in left), a))
+        order.append(k)
+        left.remove(k)
+    return order, above
