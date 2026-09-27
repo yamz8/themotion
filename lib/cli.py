@@ -6,6 +6,7 @@ usage:
   themotion render  <scene>             draw every frame
   themotion finish  <scene> [--install] encode the video (and copy it into the theme)
   themotion check   <video> <wallpaper> [--pattern NAME]
+  themotion fit     <video> <wallpaper> [--out FILE]  re-finish a footage intro's ending onto the exact wallpaper
   themotion make    <scene> [--install] split, render, finish and check
 
 options:
@@ -211,9 +212,19 @@ def cmd_check(video, wallpaper, pattern_name, spec=None):
         sys.exit(1)
 
 
+def cmd_fit(video, wallpaper, pattern_name, out, sets):
+    sys.path.insert(0, LIB)
+    from fit import fit
+    pattern = load_pattern(pattern_name)
+    spec = {**pattern["defaults"], **parse_sets(sets)}
+    n = fit(video, wallpaper, out, spec)
+    print(f"fitted {n} frames: {os.path.relpath(out)}")
+    cmd_check(out, wallpaper, pattern_name, spec)
+
+
 def main():
     ap = argparse.ArgumentParser(prog="themotion", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["split", "preview", "render", "finish", "check", "make"])
+    ap.add_argument("command", choices=["split", "preview", "render", "finish", "check", "fit", "make"])
     ap.add_argument("target")
     ap.add_argument("wallpaper", nargs="?")
     ap.add_argument("--omarchy")
@@ -221,12 +232,19 @@ def main():
     ap.add_argument("--pattern", default="omarchy-intro@1")
     ap.add_argument("--install", action="store_true")
     ap.add_argument("--open", action="store_true")
+    ap.add_argument("--out")
     a = ap.parse_args()
 
     if a.command == "check":
         if not a.wallpaper:
             die("usage: themotion check <video> <wallpaper>")
         return cmd_check(a.target, a.wallpaper, a.pattern)
+
+    if a.command == "fit":
+        if not a.wallpaper:
+            die("usage: themotion fit <video> <wallpaper> [--out FILE]")
+        out = a.out or os.path.splitext(a.target)[0] + ".fit.mp4"
+        return cmd_fit(a.target, a.wallpaper, a.pattern, out, a.sets)
 
     scene = Scene(a.target, a.omarchy, a.sets)
     if a.command == "split":

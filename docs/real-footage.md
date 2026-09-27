@@ -9,4 +9,4 @@ For those, start from a real video instead:
 
 Whatever the source, the result must meet the same pattern. `themotion check <video> <wallpaper>` tells you whether it does: it fails on a bright opening, a colour-matrix mismatch, or an ending that is not the exact wallpaper.
 
-Tools for fitting footage to a pattern (retiming to the allowed length, fading from black, blending the last frames into the exact wallpaper) are planned as a `themotion fit` command.
+`themotion fit <video> <wallpaper>` re-finishes a footage intro's ending: it keeps every frame, blends the last 0.4 s into the wallpaper exactly as the check encodes it, holds it, and gives the settled frames the pattern's high quality. Use it when a video passes everything but the `end` check, which is common when the ending was blended into a copy of the wallpaper from a different decoder. Retiming and fading from black are still manual.
