@@ -34,8 +34,13 @@ def still_as_video_frame(wallpaper, width, height, pix_fmt):
     """
     from PIL import Image
     img = Image.open(wallpaper).convert("RGB")
+    # A video in another shape than the wallpaper (older 16:9 footage of a 3:2
+    # wallpaper) shows its centre crop, as the shell does on a 16:9 screen.
+    fill = ""
+    if abs(width / height - img.width / img.height) / (img.width / img.height) > 0.01:
+        fill = f"scale={width}:{height}:flags=bicubic:force_original_aspect_ratio=increase,crop={width}:{height},"
     raw = subprocess.run(["ffmpeg", "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{img.width}x{img.height}",
-                          "-i", "-", "-vf", f"scale={width}:{height}:flags=bicubic:out_color_matrix=bt709:out_range=tv,format={pix_fmt}",
+                          "-i", "-", "-vf", f"{fill}scale={width}:{height}:flags=bicubic:out_color_matrix=bt709:out_range=tv,format={pix_fmt}",
                           "-f", "rawvideo", "-pix_fmt", pix_fmt, "-"], input=img.tobytes(), check=True, capture_output=True).stdout
     return np.frombuffer(raw, np.uint8)
 
