@@ -1,0 +1,7 @@
+title = "Rose Pine funky shapes"
+theme = "rose-pine"
+wallpaper = "1-funky-shapes.webp"
+pattern = "omarchy-intro@1"
+
+[defaults]
+fade_in = 0.9   # pale pink paper: a shorter fade steps close to 12 levels a frame

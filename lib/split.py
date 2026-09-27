@@ -21,9 +21,11 @@ class LayerWriter:
         self.meta = {"width": width, "height": height, "layers": []}
         os.makedirs(outdir, exist_ok=True)
 
-    def save(self, name, alpha, color, pad=2):
+    def save(self, name, alpha, color, pad=2, at=(0, 0)):
         """Save a shape whose coverage is `alpha` (H, W, 0..1) in `color`: one
-        RGB value for a flat shape, or an (H, W, 3) array for per-pixel colour."""
+        RGB value for a flat shape, or an (H, W, 3) array for per-pixel colour.
+        `alpha` and `color` may be a crop of the wallpaper whose top-left
+        corner is at `at` (x, y); the padding then stays within the crop."""
         ys, xs = np.nonzero(alpha > 0)
         if len(ys) == 0:
             raise ValueError(f"layer {name} is empty")
@@ -35,7 +37,8 @@ class LayerWriter:
         rgba[..., :3] = np.round(np.clip(color[y0:y1, x0:x1], 0, 255)).astype(np.uint8)
         rgba[..., 3] = np.round(np.clip(alpha[y0:y1, x0:x1], 0, 1) * 255)
         Image.fromarray(rgba).save(os.path.join(self.outdir, f"{name}.png"), optimize=True)
-        self.meta["layers"].append({"name": name, "x": int(x0), "y": int(y0), "w": int(x1 - x0), "h": int(y1 - y0)})
+        self.meta["layers"].append({"name": name, "x": int(x0 + at[0]), "y": int(y0 + at[1]),
+                                    "w": int(x1 - x0), "h": int(y1 - y0)})
 
     def write(self):
         with open(os.path.join(self.outdir, "layers.json"), "w") as f:
