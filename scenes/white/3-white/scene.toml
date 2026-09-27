@@ -1,0 +1,7 @@
+title = "White stationery"
+theme = "white"
+wallpaper = "3-white.webp"
+pattern = "omarchy-intro@1"
+
+[defaults]
+fade_in = 1.0   # near-white paper: a shorter fade from black would step more than 12 levels a frame
