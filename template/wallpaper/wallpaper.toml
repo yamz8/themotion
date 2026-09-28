@@ -1,1 +1,2 @@
-file = "1-my-wallpaper.png"  # in the Omarchy theme's backgrounds/; name this folder after it
+kind = "graphic"   # logo, graphic, pattern, scene or dense; see docs/making-a-motion.md
+about = "One line on what the picture shows"

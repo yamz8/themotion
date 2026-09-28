@@ -1,1 +1,2 @@
-file = "2-geometric.webp"  # in the Omarchy theme's backgrounds/
+kind = "graphic"
+about = "Network of translucent cyan triangles and dots on black, dense at the lower right"

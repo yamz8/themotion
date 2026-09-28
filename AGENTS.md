@@ -5,7 +5,7 @@ Motion for Omarchy themes, made from their wallpapers. Read `README.md` first, t
 ## Layout
 
 - `patterns/*.toml`: output contracts. `[requires]` comes from how the target plays the video and is never overridden; `[defaults]` is taste; `[check]` holds thresholds.
-- `wallpapers/<theme>/<wallpaper-name>/`: `wallpaper.toml` (the file in the theme's `backgrounds/`), `split.py` (cuts it into layers) and `credit.md`. The folder name matches the wallpaper file's stem. One per wallpaper, shared by all its motions.
+- `wallpapers/<theme>/<wallpaper-name>/`: the catalog, one folder for every Omarchy wallpaper, named after the file's stem. `wallpaper.toml` holds its `kind` and a one-line `about`; `split.py` (cuts it into layers) and `credit.md` are added when it is worked on. Shared by all its motions. `themotion catalog` lists them all.
 - `motions/<theme>/<wallpaper-name>/<motion>/`: `scene.toml` (title, pattern, overrides), `scene.js` and `notes.md` (storyboard). A wallpaper can have many motions; the one installed becomes the theme's intro for that wallpaper.
 - `engine/`: the CLI (`cli.py`), split helpers (`split.py`), checker (`check.py`), browser runtime (`runtime.js`, `ease.js`, `blocks/`), preview page (`player.html`) and renderer (`render.mjs`).
 - `build/`: generated layers, previews, frames and videos. Never committed.

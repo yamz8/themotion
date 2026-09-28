@@ -11,9 +11,10 @@ usage:
   themotion check   <video> <wallpaper> [--pattern NAME]
   themotion fit     <video> <wallpaper> [--out FILE] [--fade-in SECONDS]  re-finish a footage intro's ending (and optionally its start)
   themotion make    <motion> [--install] split, render, finish and check
+  themotion catalog [--json]             every Omarchy wallpaper, its kind and how far it has got
 
 options:
-  --omarchy PATH    an Omarchy checkout (default: $OMARCHY_PATH)
+  --omarchy PATH    an Omarchy checkout (default: $OMARCHY_PATH, then /usr/share/omarchy)
   --set KEY=VALUE   override a pattern default for this run, e.g. --set length=6.5
 """
 import argparse
@@ -30,6 +31,16 @@ import tomllib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENGINE = os.path.join(ROOT, "engine")
+IMAGE_TYPES = (".webp", ".jpg", ".jpeg", ".png")
+
+# What kind of picture a wallpaper is decides how it can be brought to life.
+KINDS = {
+    "logo": "the Omarchy wordmark on a flat colour; one motion can serve every theme",
+    "graphic": "flat shapes and line art; splits into shapes that move on their own",
+    "pattern": "repeated cells, dots or lines; moves cell by cell",
+    "scene": "an illustrated scene with depth; splits into depth bands and small objects",
+    "dense": "a painting or photo; real footage fitted with `themotion fit`, or light effects",
+}
 
 
 def die(msg):
@@ -62,6 +73,14 @@ def parse_sets(sets):
     return out
 
 
+def omarchy_path(omarchy=None):
+    for path in (omarchy, os.environ.get("OMARCHY_PATH"), "/usr/share/omarchy",
+                 os.path.expanduser("~/.local/share/omarchy")):
+        if path and os.path.isdir(os.path.join(path, "themes")):
+            return path
+    die("no Omarchy found; pass --omarchy PATH or set $OMARCHY_PATH")
+
+
 def read_toml(path, what):
     if not os.path.exists(path):
         die(f"{os.path.relpath(os.path.dirname(path))} has no {os.path.basename(path)}; is it a {what}?")
@@ -77,20 +96,32 @@ class Wallpaper:
         self.cfg = read_toml(os.path.join(self.dir, "wallpaper.toml"), "wallpaper")
         self.name = os.path.basename(self.dir)
         self.theme = os.path.basename(os.path.dirname(self.dir))
-        if os.path.splitext(self.cfg["file"])[0] != self.name:
-            die(f"{os.path.relpath(self.dir)} must be named after its file, {self.cfg['file']}")
-        self.omarchy = omarchy or os.environ.get("OMARCHY_PATH")
+        if self.cfg.get("kind") not in KINDS:
+            die(f"{os.path.relpath(self.dir)}/wallpaper.toml: kind must be one of {', '.join(KINDS)}")
+        self.omarchy = omarchy
         self.build = os.path.join(ROOT, "build", self.theme, self.name)
         self.layers = os.path.join(self.build, "layers")
 
     @property
     def path(self):
-        if not self.omarchy:
-            die("set --omarchy or $OMARCHY_PATH to an Omarchy checkout")
-        path = os.path.join(self.omarchy, "themes", self.theme, "backgrounds", self.cfg["file"])
-        if not os.path.exists(path):
-            die(f"wallpaper not found: {path}")
-        return path
+        # Found by name: Omarchy has shipped the same wallpaper as .jpg, .png and .webp.
+        backgrounds = os.path.join(omarchy_path(self.omarchy), "themes", self.theme, "backgrounds")
+        for ext in IMAGE_TYPES:
+            path = os.path.join(backgrounds, self.name + ext)
+            if os.path.exists(path):
+                return path
+        die(f"wallpaper not found: {os.path.join(backgrounds, self.name)}.*")
+
+    @property
+    def motions(self):
+        return sorted(os.path.basename(os.path.dirname(p)) for p in
+                      glob.glob(os.path.join(ROOT, "motions", self.theme, self.name, "*", "scene.toml")))
+
+    @property
+    def state(self):
+        if self.motions:
+            return "motion"
+        return "split" if os.path.exists(os.path.join(self.dir, "split.py")) else "new"
 
 
 class Motion:
@@ -226,7 +257,7 @@ def cmd_finish(motion, install=False):
 
 def cmd_install(motion, out):
     wp = motion.wallpaper
-    dest = os.path.join(wp.omarchy, "themes", wp.theme, motion.pattern["output"].format(name=wp.name))
+    dest = os.path.join(omarchy_path(wp.omarchy), "themes", wp.theme, motion.pattern["output"].format(name=wp.name))
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     shutil.copyfile(out, dest)
     # Omarchy pairs each intro with the hash of its wallpaper, so a changed
@@ -236,6 +267,40 @@ def cmd_install(motion, out):
     with open(os.path.splitext(dest)[0] + ".sha256", "w") as f:
         f.write(digest + "\n")
     print(f"installed: {dest}")
+
+
+def cmd_catalog(omarchy=None, as_json=False):
+    from PIL import Image
+    root = omarchy_path(omarchy)
+    rows, unlisted = [], []
+    for f in sorted(glob.glob(os.path.join(root, "themes", "*", "backgrounds", "*"))):
+        if os.path.splitext(f)[1].lower() not in IMAGE_TYPES:
+            continue
+        theme, name = f.split(os.sep)[-3], os.path.splitext(os.path.basename(f))[0]
+        d = os.path.join(ROOT, "wallpapers", theme, name)
+        if not os.path.exists(os.path.join(d, "wallpaper.toml")):
+            unlisted.append(f"{theme}/{name}")
+            continue
+        wp = Wallpaper(d, root)
+        with Image.open(f) as im:
+            w, h = im.size
+        rows.append({"wallpaper": f"{theme}/{name}", "kind": wp.cfg["kind"], "state": wp.state,
+                     "motions": wp.motions, "size": [w, h], "about": wp.cfg["about"]})
+    if as_json:
+        print(json.dumps({"omarchy": root, "wallpapers": rows, "unlisted": unlisted}, indent=2))
+        return
+    width = max(len(r["wallpaper"]) for r in rows)
+    for r in rows:
+        state = ", ".join(r["motions"]) if r["motions"] else r["state"]
+        print(f"{r['wallpaper']:<{width}}  {r['kind']:<8} {state:<16} {r['size'][0]}x{r['size'][1]}")
+    print()
+    for kind, meaning in KINDS.items():
+        of = [r for r in rows if r["kind"] == kind]
+        done = sum(1 for r in of if r["state"] == "motion")
+        print(f"{kind:<8} {len(of):>3} wallpapers, {done:>2} with a motion: {meaning}")
+    print(f"\n{sum(1 for r in rows if r['state'] == 'motion')} of {len(rows)} wallpapers have a motion ({root})")
+    for u in unlisted:
+        print(f"not in the catalog yet: {u} (add wallpapers/{u}/wallpaper.toml)")
 
 
 def cmd_check(video, wallpaper, pattern_name, spec=None):
@@ -259,8 +324,8 @@ def cmd_fit(video, wallpaper, pattern_name, out, sets, fade_in=0.0):
 
 def main():
     ap = argparse.ArgumentParser(prog="themotion", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["split", "preview", "render", "finish", "check", "fit", "make"])
-    ap.add_argument("target")
+    ap.add_argument("command", choices=["split", "preview", "render", "finish", "check", "fit", "make", "catalog"])
+    ap.add_argument("target", nargs="?")
     ap.add_argument("wallpaper", nargs="?")
     ap.add_argument("--omarchy")
     ap.add_argument("--set", action="append", dest="sets")
@@ -269,7 +334,13 @@ def main():
     ap.add_argument("--open", action="store_true")
     ap.add_argument("--out")
     ap.add_argument("--fade-in", type=float, default=0.0, help="fit: also fade up from black over this many seconds")
+    ap.add_argument("--json", action="store_true", help="catalog: print JSON")
     a = ap.parse_args()
+
+    if a.command == "catalog":
+        return cmd_catalog(a.omarchy, a.json)
+    if not a.target:
+        die(f"{a.command} needs a target; see themotion --help")
 
     if a.command == "check":
         if not a.wallpaper:

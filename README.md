@@ -23,7 +23,7 @@ pass  end          last frame vs wallpaper: mean 0.04, max 11 (max 0.3 / 24)
 ## Requirements
 
 - Linux with `ffmpeg`, `node` 20+, [`uv`](https://docs.astral.sh/uv/), and Chromium or Chrome (Omarchy ships all but uv)
-- An Omarchy checkout, for the wallpapers; pass `--omarchy PATH` or set `$OMARCHY_PATH`
+- Omarchy, for the wallpapers: `$OMARCHY_PATH` (Omarchy sets it), then `/usr/share/omarchy`; pass `--omarchy PATH` to use a checkout instead
 
 Python and Node dependencies install themselves on first run.
 
@@ -31,6 +31,7 @@ Python and Node dependencies install themselves on first run.
 
 | Command | What it does |
 |---|---|
+| `themotion catalog [--json]` | Lists every Omarchy wallpaper with its kind and how far it has got |
 | `themotion split <wallpaper or motion>` | Splits the wallpaper into layers under `build/` |
 | `themotion preview <motion> [--open]` | Builds a self-contained preview page with play, scrub, and a wallpaper comparison |
 | `themotion render <motion>` | Draws every frame at the wallpaper's full size (or `render_scale` of it) in headless Chromium |
@@ -44,7 +45,7 @@ Python and Node dependencies install themselves on first run.
 ## How it fits together
 
 - **Patterns** (`patterns/*.toml`) are output contracts. `[requires]` lists what the target needs, which nothing may override; `[defaults]` are taste, which motions override. `themotion check` enforces the requirements. See [docs/patterns.md](docs/patterns.md).
-- **Wallpapers** (`wallpapers/<theme>/<wallpaper>/`) say how each Omarchy wallpaper is cut into parts: `wallpaper.toml` names the file, `split.py` cuts it, and `credit.md` credits its creator. A wallpaper is split once and shared by all its motions.
+- **Wallpapers** (`wallpapers/<theme>/<wallpaper>/`) are the catalog: every Omarchy wallpaper has a folder, named after its file. `wallpaper.toml` says what kind of picture it is (`logo`, `graphic`, `pattern`, `scene` or `dense`) and what it shows; once someone works on it, `split.py` cuts it into parts and `credit.md` credits its creator. A wallpaper is split once and shared by all its motions.
 - **Motions** (`motions/<theme>/<wallpaper>/<motion>/`) move those parts: `scene.toml` picks the pattern, `scene.js` draws an `enter` (how the picture builds up) and optionally an `idle` (gentle motion on the settled picture, for future looping patterns), and `notes.md` holds the storyboard. See [docs/making-a-motion.md](docs/making-a-motion.md).
 - **The engine** (`engine/`) is the CLI, the split helpers, the browser runtime, the preview page, the renderer and the checker.
 - **Blocks** (`engine/blocks/`) are reusable motion: a starfield, glows and halos, a shockwave, and a pop-in with overshoot and bob.

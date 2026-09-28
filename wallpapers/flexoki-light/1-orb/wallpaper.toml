@@ -1,1 +1,2 @@
-file = "1-orb.webp"  # in the Omarchy theme's backgrounds/
+kind = "pattern"
+about = "A ball shaded by a 4x4 Bayer dither of ink cells on cream paper"

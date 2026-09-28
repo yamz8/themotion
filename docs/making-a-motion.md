@@ -5,7 +5,7 @@ A motion brings one wallpaper to life. It takes two folders, both named after th
 - `wallpapers/<theme>/<wallpaper>/` says how the wallpaper is cut into parts. It is written once, and every motion of that wallpaper shares it.
 - `motions/<theme>/<wallpaper>/<motion>/` is one way of moving those parts. A wallpaper can have any number of them.
 
-If the wallpaper already has a folder under `wallpapers/`, skip to step 3. Otherwise start by copying `template/wallpaper/`, and for the motion copy `template/motion/`.
+Every Omarchy wallpaper already has a folder under `wallpapers/` with its `wallpaper.toml`; `themotion catalog` lists them all with their kind and how far each has got. If the wallpaper already has a `split.py`, skip to step 3. For the motion, copy `template/motion/`.
 
 ## 1. Storyboard
 
@@ -26,11 +26,22 @@ Graphic wallpapers with flat shapes on a flat or smooth background work best: ea
 
 ## 2. The wallpaper: `wallpaper.toml`, `split.py`, `credit.md`
 
-`wallpaper.toml` names the file in the Omarchy theme's `backgrounds/`; the theme is the folder above:
+The folder is named after the file in the Omarchy theme's `backgrounds/`, without its extension, and the theme is the folder above. `wallpaper.toml` says what kind of picture it is and what it shows:
 
 ```toml
-file = "1-totoro.webp"
+kind = "graphic"
+about = "Totoro silhouette in a lilac moon with soot sprites, on dark navy"
 ```
+
+The kind decides how the picture can be brought to life:
+
+| Kind | What it is | How it moves |
+|---|---|---|
+| `logo` | The Omarchy wordmark on a flat colour | One motion can serve every theme |
+| `graphic` | Flat shapes and line art | Split into shapes that move on their own |
+| `pattern` | Repeated cells, dots or lines | Moves cell by cell |
+| `scene` | An illustrated scene with depth | Split into depth bands and small objects |
+| `dense` | A painting or photo | Real footage fitted with `themotion fit` (see [real-footage.md](real-footage.md)), or light effects |
 
 `split.py` cuts it into layers. `split(image, layers)` receives the wallpaper as a float RGB array and saves each movable shape with `layers.save(name, alpha, color)`. Anything a motion needs to know (centres, radii, colours) goes in `layers.meta`. Helpers in `engine/split.py`:
 

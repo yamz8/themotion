@@ -1,1 +1,2 @@
-file = "1-color-curves.webp"  # in the Omarchy theme's backgrounds/
+kind = "graphic"
+about = "Nested colour bands fanning around a dark dome"

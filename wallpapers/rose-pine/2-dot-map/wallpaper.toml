@@ -1,1 +1,2 @@
-file = "2-dot-map.webp"  # in the Omarchy theme's backgrounds/
+kind = "pattern"
+about = "A grid of small rounded squares on cream, darker along a diagonal band"

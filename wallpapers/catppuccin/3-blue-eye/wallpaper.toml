@@ -1,1 +1,2 @@
-file = "3-blue-eye.webp"  # in the Omarchy theme's backgrounds/
+kind = "graphic"
+about = "Small blue spirograph eye of looping lines, centred on dark navy"
