@@ -41,12 +41,11 @@ themotion.scene({
     // Stars twinkle in, then spiral into the centre.
     if (t < 2) this.stars.draw(ctx, t, { appear: [0.15, 0.95], pull: [0.9, 1.8] })
 
-    // The moon: a bright seed, a shockwave, and the disc springing open.
+    // The moon: a bright seed and the disc springing open.
     const moon = 1.55
     const rad = R * ease.spring(seg(t, moon, 2.85))
     blocks.glow(ctx, cx, cy, 160, PINK, 0.95 * Math.exp(-Math.pow((t - moon) / 0.22, 2)))
     blocks.halo(ctx, cx, cy, rad, MAUVE, Math.sin(Math.PI * seg(t, moon, 4.7)) * 0.55)
-    blocks.shockwave(ctx, cx, cy, R * 0.2, R * 2.1, PINK, seg(t, moon, moon + 1.1))
     if (rad <= 0.5) return
 
     ctx.save()
