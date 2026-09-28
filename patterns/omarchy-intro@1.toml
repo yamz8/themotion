@@ -11,7 +11,7 @@ description = "Plays once per boot, fades in from black and lands on the wallpap
 output = "intros/{name}.mp4"
 
 # Requirements come from how Omarchy plays the video. Breaking one shows up
-# on screen, so scenes and themes cannot override them; `themotion check`
+# on screen, so motions and themes cannot override them; `themotion check`
 # enforces each one.
 [requires]
 # The screen is black just before the intro starts.
@@ -29,7 +29,7 @@ length_range = [5.0, 7.0]
 # cropped differently at the handoff.
 shape = "wallpaper"
 
-# Defaults are taste. A scene overrides them in its scene.toml, and a single
+# Defaults are taste. A motion overrides them in its scene.toml, and a single
 # render can override them with --set key=value.
 [defaults]
 length = 6.0
@@ -40,7 +40,7 @@ width = 1920
 height = 1080
 # Seconds to fade in from black.
 fade_in = 0.6
-# When the scene's motion should be finished; from here the frame blends
+# When the motion should be finished; from here the frame blends
 # into the exact still over `handoff` seconds, then holds it.
 settle = 5.0
 handoff = 0.3
@@ -49,7 +49,7 @@ handoff = 0.3
 # desktop hands over from, so they get more bits than the motion needs.
 crf = 16
 settled_q = 12
-# The size frames are drawn at, as a fraction of the wallpaper's; the scene
+# The size frames are drawn at, as a fraction of the wallpaper's; the motion
 # still draws in wallpaper pixels. A very large wallpaper (7680x4320) can
 # render at less than full size, as long as the frames stay larger than the
 # video.

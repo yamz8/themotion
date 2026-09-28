@@ -1,0 +1,6 @@
+title = "My motion"
+pattern = "omarchy-intro@1"
+
+# Optional overrides of the pattern's defaults (see patterns/)
+# [defaults]
+# fade_in = 1.0
