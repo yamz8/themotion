@@ -96,8 +96,6 @@ themotion.scene({
       ctx.restore()
     }
 
-    // The ring closes with a shockwave; its halo, drawn with the eye, fades before the handoff.
-    blocks.shockwave(ctx, cx, cy, outer * 0.9, outer * 2.4, BLUE, seg(t, 2.45, 3.5), 7)
   },
 
   // Settled picture: the halo breathes, the pupil breathes, one blink.
