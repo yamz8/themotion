@@ -1,7 +1,9 @@
 """themotion: make motion for Omarchy themes from their wallpapers.
 
 A wallpaper (wallpapers/<theme>/<wallpaper>/) is cut into parts once; a
-motion (motions/<theme>/<wallpaper>/<motion>/) moves those parts.
+motion (motions/<theme>/<wallpaper>/<motion>/) moves those parts. A shared
+motion (motions/shared/<motion>/) serves every wallpaper of one kind: pick
+one with --wallpaper THEME/NAME, or all of them with --all.
 
 usage:
   themotion split   <wallpaper|motion>   split the wallpaper into layers
@@ -11,6 +13,7 @@ usage:
   themotion check   <video> <wallpaper> [--pattern NAME]
   themotion fit     <video> <wallpaper> [--out FILE] [--fade-in SECONDS]  re-finish a footage intro's ending (and optionally its start)
   themotion make    <motion> [--install] split, render, finish and check
+  themotion look    <motion>             key frames on one sheet, and when the frame becomes the wallpaper
   themotion catalog [--json]             every Omarchy wallpaper, its kind and how far it has got
 
 options:
@@ -23,6 +26,7 @@ import glob
 import hashlib
 import importlib.util
 import json
+import math
 import os
 import shutil
 import subprocess
@@ -113,38 +117,85 @@ class Wallpaper:
         die(f"wallpaper not found: {os.path.join(backgrounds, self.name)}.*")
 
     @property
+    def split_script(self):
+        """The wallpaper's own split.py, or else the automatic split for its kind."""
+        for path in (os.path.join(self.dir, "split.py"), os.path.join(ENGINE, "kinds", self.cfg["kind"] + ".py")):
+            if os.path.exists(path):
+                return path
+
+    @property
     def motions(self):
-        return sorted(os.path.basename(os.path.dirname(p)) for p in
-                      glob.glob(os.path.join(ROOT, "motions", self.theme, self.name, "*", "scene.toml")))
+        own = [os.path.basename(os.path.dirname(p)) for p in
+               glob.glob(os.path.join(ROOT, "motions", self.theme, self.name, "*", "scene.toml"))]
+        return sorted(own) + [name for name, kind in shared_motions() if kind == self.cfg["kind"]]
 
     @property
     def state(self):
         if self.motions:
             return "motion"
-        return "split" if os.path.exists(os.path.join(self.dir, "split.py")) else "new"
+        if os.path.exists(os.path.join(self.dir, "split.py")):
+            return "split"
+        return "auto split" if self.split_script else "new"
+
+
+def shared_motions():
+    out = []
+    for path in sorted(glob.glob(os.path.join(ROOT, "motions", "shared", "*", "scene.toml"))):
+        with open(path, "rb") as f:
+            out.append((os.path.basename(os.path.dirname(path)), tomllib.load(f).get("kind")))
+    return out
+
+
+def wallpapers_of(kind, omarchy=None):
+    return [Wallpaper(os.path.dirname(p), omarchy)
+            for p in sorted(glob.glob(os.path.join(ROOT, "wallpapers", "*", "*", "wallpaper.toml")))
+            if read_toml(p, "wallpaper").get("kind") == kind]
 
 
 class Motion:
     """motions/<theme>/<wallpaper>/<motion>/: one way of moving a wallpaper's parts."""
 
-    def __init__(self, path, omarchy=None, sets=None):
+    def __init__(self, path, omarchy=None, sets=None, wallpaper=None):
         self.dir = os.path.abspath(path.rstrip("/"))
         self.cfg = read_toml(os.path.join(self.dir, "scene.toml"), "motion")
         self.name = os.path.basename(self.dir)
-        wallpaper = os.path.dirname(self.dir)
-        theme = os.path.dirname(wallpaper)
-        self.wallpaper = Wallpaper(
-            os.path.join(ROOT, "wallpapers", os.path.basename(theme), os.path.basename(wallpaper)), omarchy)
+        self.shared = os.path.dirname(self.dir) == os.path.join(ROOT, "motions", "shared")
+        if self.shared:
+            if not wallpaper:
+                die(f"{self.name} is shared by every {self.cfg.get('kind')} wallpaper; "
+                    "pick one with --wallpaper THEME/NAME or use --all")
+            self.wallpaper = Wallpaper(os.path.join(ROOT, "wallpapers", wallpaper), omarchy)
+            if self.wallpaper.cfg["kind"] != self.cfg.get("kind"):
+                die(f"{wallpaper} is a {self.wallpaper.cfg['kind']} wallpaper; {self.name} is for {self.cfg.get('kind')}")
+        else:
+            parent = os.path.dirname(self.dir)
+            self.wallpaper = Wallpaper(os.path.join(ROOT, "wallpapers", os.path.basename(os.path.dirname(parent)),
+                                                    os.path.basename(parent)), omarchy)
         self.pattern_name = self.cfg.get("pattern", "omarchy-intro@1")
         self.pattern = load_pattern(self.pattern_name)
         # Requirements win over everything; defaults are overridable.
-        self.spec = {**self.pattern["defaults"], **self.cfg.get("defaults", {}), **parse_sets(sets)}
+        chosen = {**self.cfg.get("defaults", {}), **parse_sets(sets)}
+        self.spec = {**self.pattern["defaults"], **chosen}
+        if "fade_in" not in chosen and "fade_max_step" in self.pattern.get("check", {}):
+            self.spec["fade_in"] = max(self.spec["fade_in"], self.fade_for_brightness())
         lo, hi = self.pattern["requires"]["length_range"]
         if not lo <= self.spec["length"] <= hi:
             die(f"length {self.spec['length']} s is outside the pattern's {lo}-{hi} s")
         if self.spec["settle"] + self.spec["handoff"] > self.spec["length"]:
             die("settle + handoff must end before the video does")
         self.build = os.path.join(self.wallpaper.build, self.name)
+        # A wallpaper's title stands in for {wallpaper} in a shared motion's title.
+        self.title = self.cfg["title"].replace("{wallpaper}", f"{self.wallpaper.theme}/{self.wallpaper.name}")
+
+    def fade_for_brightness(self):
+        """The shortest fade from black that keeps a bright wallpaper's
+        per-frame step well under the check's limit (40% of margin)."""
+        from PIL import Image
+        with Image.open(self.wallpaper.path) as im:
+            im.draft("L", (im.width // 8, im.height // 8))
+            luma = sum(i * n for i, n in enumerate(im.convert("L").histogram())) / (im.width * im.height)
+        limit = 0.6 * self.pattern["check"]["fade_max_step"] * self.spec["fps"]
+        return math.ceil(luma / limit * 10) / 10
 
     @property
     def output(self):
@@ -152,10 +203,15 @@ class Motion:
         return os.path.join(self.build, self.pattern["output"].format(name=self.wallpaper.name))
 
 
-def load_target(path, omarchy=None, sets=None):
+def load_targets(path, omarchy=None, sets=None, wallpaper=None, every=False):
     if os.path.exists(os.path.join(path, "wallpaper.toml")):
-        return Wallpaper(path, omarchy)
-    return Motion(path, omarchy, sets)
+        return [Wallpaper(path, omarchy)]
+    if every:
+        kind = read_toml(os.path.join(path, "scene.toml"), "motion").get("kind")
+        if not kind:
+            die("--all is for shared motions (motions/shared/<motion>/)")
+        return [Motion(path, omarchy, sets, f"{w.theme}/{w.name}") for w in wallpapers_of(kind, omarchy)]
+    return [Motion(path, omarchy, sets, wallpaper)]
 
 
 # ---------- commands ----------
@@ -166,7 +222,10 @@ def cmd_split(wallpaper):
     from PIL import Image
     from split import LayerWriter
 
-    spec = importlib.util.spec_from_file_location("wallpaper_split", os.path.join(wallpaper.dir, "split.py"))
+    if not wallpaper.split_script:
+        die(f"{os.path.relpath(wallpaper.dir)} has no split.py yet, and {wallpaper.cfg['kind']} wallpapers "
+            "have no automatic split")
+    spec = importlib.util.spec_from_file_location("wallpaper_split", wallpaper.split_script)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     image = np.asarray(Image.open(wallpaper.path).convert("RGB")).astype(np.float64)
@@ -198,7 +257,7 @@ def cmd_preview(motion, open_page=False):
     config = {"pattern": motion.pattern_name, "spec": motion.spec, "meta": meta, "images": images}
     with open(os.path.join(ENGINE, "player.html")) as f:
         page = f.read()
-    page = (page.replace("{{TITLE}}", motion.cfg["title"]).replace("{{SCRIPTS}}", inline)
+    page = (page.replace("{{TITLE}}", motion.title).replace("{{SCRIPTS}}", inline)
             .replace("{{CONFIG}}", json.dumps(config)))
     os.makedirs(motion.build, exist_ok=True)
     out = os.path.join(motion.build, "preview.html")
@@ -220,6 +279,48 @@ def cmd_render(motion):
     ensure_node()
     run(["node", os.path.join(ENGINE, "render.mjs"), page, os.path.join(motion.build, "frames"),
          str(motion.spec["render_scale"])])
+
+
+def cmd_look(motion, every=0.5):
+    """Render small frames, put key frames on one sheet, and measure how far
+    every frame is from the wallpaper, so a motion can be judged at a glance."""
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
+    page = cmd_preview(motion)
+    ensure_node()
+    look = os.path.join(motion.build, "look")
+    frames, still_png = os.path.join(look, "frames"), os.path.join(look, "still.png")
+    W = json.load(open(os.path.join(motion.wallpaper.layers, "layers.json")))["width"]
+    run(["node", os.path.join(ENGINE, "render.mjs"), page, frames, str(min(1.0, 640 / W)), still_png],
+        stdout=subprocess.DEVNULL)
+    still = np.asarray(Image.open(still_png).convert("RGB")).astype(float)
+    paths = sorted(glob.glob(os.path.join(frames, "*.png")))
+    fps = motion.spec["fps"]
+    diff, worst = [], []
+    for p in paths:
+        d = np.abs(np.asarray(Image.open(p).convert("RGB")).astype(float) - still)
+        diff.append(float(d.mean()))
+        worst.append(float(d.max()))
+    # At the wallpaper once no pixel is more than 2 levels off: blending the
+    # still over an identical frame alone can round by a level.
+    exact = next((i for i in range(len(worst)) if max(worst[i:]) <= 2), None)
+
+    keys = [i for i in range(0, len(paths), round(every * fps))]
+    tw, th = Image.open(paths[0]).size
+    cols = 4
+    font = ImageFont.load_default(size=max(12, th // 16))
+    sheet = Image.new("RGB", (cols * tw, -(-len(keys) // cols) * (th + th // 8)), (30, 30, 30))
+    draw = ImageDraw.Draw(sheet)
+    for n, i in enumerate(keys):
+        x, y = (n % cols) * tw, (n // cols) * (th + th // 8)
+        sheet.paste(Image.open(paths[i]), (x, y))
+        draw.text((x + 6, y + th + 2), f"{i / fps:.1f} s   off by {diff[i]:.2f}", fill=(235, 235, 235), font=font)
+    out = os.path.join(motion.build, "look.png")
+    sheet.save(out)
+    print(f"look: {os.path.relpath(out)}")
+    when = f"{exact / fps:.2f} s" if exact is not None else "never"
+    print(f"the frame is the wallpaper from {when} (settle {motion.spec['settle']} s)")
+    return out
 
 
 def output_size(motion):
@@ -324,7 +425,8 @@ def cmd_fit(video, wallpaper, pattern_name, out, sets, fade_in=0.0):
 
 def main():
     ap = argparse.ArgumentParser(prog="themotion", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["split", "preview", "render", "finish", "check", "fit", "make", "catalog"])
+    ap.add_argument("command", choices=["split", "preview", "render", "finish", "check", "fit", "make", "look",
+                                        "catalog"])
     ap.add_argument("target", nargs="?")
     ap.add_argument("wallpaper", nargs="?")
     ap.add_argument("--omarchy")
@@ -335,6 +437,8 @@ def main():
     ap.add_argument("--out")
     ap.add_argument("--fade-in", type=float, default=0.0, help="fit: also fade up from black over this many seconds")
     ap.add_argument("--json", action="store_true", help="catalog: print JSON")
+    ap.add_argument("--wallpaper", dest="for_wallpaper", help="the wallpaper (THEME/NAME) a shared motion is for")
+    ap.add_argument("--all", action="store_true", help="run a shared motion for every wallpaper of its kind")
     a = ap.parse_args()
 
     if a.command == "catalog":
@@ -353,13 +457,19 @@ def main():
         out = a.out or os.path.splitext(a.target)[0] + ".fit.mp4"
         return cmd_fit(a.target, a.wallpaper, a.pattern, out, a.sets, a.fade_in)
 
-    target = load_target(a.target, a.omarchy, a.sets)
+    for target in load_targets(a.target, a.omarchy, a.sets, a.for_wallpaper, a.all):
+        run_command(a, target)
+
+
+def run_command(a, target):
     if a.command == "split":
         return cmd_split(target if isinstance(target, Wallpaper) else target.wallpaper)
     if isinstance(target, Wallpaper):
         die(f"{a.command} takes a motion (motions/<theme>/<wallpaper>/<motion>/), not a wallpaper")
     motion = target
-    if a.command == "preview":
+    if a.command == "look":
+        cmd_look(motion)
+    elif a.command == "preview":
         cmd_preview(motion, a.open)
     elif a.command == "render":
         cmd_render(motion)

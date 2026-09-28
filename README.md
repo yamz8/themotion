@@ -34,20 +34,22 @@ Python and Node dependencies install themselves on first run.
 | `themotion catalog [--json]` | Lists every Omarchy wallpaper with its kind and how far it has got |
 | `themotion split <wallpaper or motion>` | Splits the wallpaper into layers under `build/` |
 | `themotion preview <motion> [--open]` | Builds a self-contained preview page with play, scrub, and a wallpaper comparison |
+| `themotion look <motion>` | Puts key frames on one sheet and reports when the frame becomes the wallpaper |
 | `themotion render <motion>` | Draws every frame at the wallpaper's full size (or `render_scale` of it) in headless Chromium |
 | `themotion finish <motion> [--install]` | Encodes the video; `--install` copies it into the theme with its wallpaper hash |
 | `themotion check <video> <wallpaper>` | Checks a video against its pattern, whoever made it |
 | `themotion fit <video> <wallpaper>` | Re-finishes a footage intro's ending onto the exact wallpaper, leaving the rest untouched |
 | `themotion make <motion> [--install]` | All of the above in order |
 
-`--set key=value` overrides a pattern default for one run, for example `--set length=6.5` or `--set fade_in=1.0`.
+`--set key=value` overrides a pattern default for one run, for example `--set length=6.5` or `--set fade_in=1.0`. A shared motion takes `--wallpaper THEME/NAME` to pick a wallpaper, or `--all` for every wallpaper of its kind.
 
 ## How it fits together
 
 - **Patterns** (`patterns/*.toml`) are output contracts. `[requires]` lists what the target needs, which nothing may override; `[defaults]` are taste, which motions override. `themotion check` enforces the requirements. See [docs/patterns.md](docs/patterns.md).
 - **Wallpapers** (`wallpapers/<theme>/<wallpaper>/`) are the catalog: every Omarchy wallpaper has a folder, named after its file. `wallpaper.toml` says what kind of picture it is (`logo`, `graphic`, `pattern`, `scene` or `dense`) and what it shows; once someone works on it, `split.py` cuts it into parts and `credit.md` credits its creator. A wallpaper is split once and shared by all its motions.
 - **Motions** (`motions/<theme>/<wallpaper>/<motion>/`) move those parts: `scene.toml` picks the pattern, `scene.js` draws an `enter` (how the picture builds up) and optionally an `idle` (gentle motion on the settled picture, for future looping patterns), and `notes.md` holds the storyboard. See [docs/making-a-motion.md](docs/making-a-motion.md).
-- **The engine** (`engine/`) is the CLI, the split helpers, the browser runtime, the preview page, the renderer and the checker.
+- **Shared motions** (`motions/shared/<motion>/`) serve every wallpaper of one kind; the first is `block-drop`, for the 20 logo wallpapers.
+- **The engine** (`engine/`) is the CLI, the split helpers, the automatic splits for each kind (`engine/kinds/`), the browser runtime, the preview page, the renderer and the checker.
 - **Blocks** (`engine/blocks/`) are reusable motion: a starfield, glows and halos, a shockwave, and a pop-in with overshoot and bob.
 - **Layers are never committed.** They are derived from the wallpaper at build time, so this repository contains code, not artwork.
 
@@ -57,6 +59,7 @@ Paintings and photos don't split into clean layers; for those, see [docs/real-fo
 
 | Theme | Wallpaper | Motion | Pattern |
 |---|---|---|---|
+| Every logo wallpaper (20) | `omarchy` | `shared/block-drop`: The wordmark's pixel blocks drop in and stack up | omarchy-intro@1 |
 | Catppuccin | `1-totoro` | `moonrise`: Totoro moonrise | omarchy-intro@1 |
 | Catppuccin | `2-waves` | `swell`: Waves swell from a line | omarchy-intro@1 |
 | Catppuccin | `3-blue-eye` | `eye-opens`: Blue eye opens | omarchy-intro@1 |

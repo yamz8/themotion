@@ -65,7 +65,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   catch (e) { $("sub").innerHTML = `<span class="error">${e.message}</span>`; throw e }
 
   // Offline rendering hook for `themotion render`.
-  window.__themotion = { length: p.length, fps: p.fps, render: t => p.intro(t) }
+  window.__themotion = { length: p.length, fps: p.fps, render: t => p.intro(t), still: () => p.still() }
   if (q.has("render")) return
 
   const s = config.spec

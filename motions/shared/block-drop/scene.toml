@@ -1,0 +1,3 @@
+title = "Omarchy blocks drop in: {wallpaper}"
+kind = "logo"   # shared: serves every logo wallpaper
+pattern = "omarchy-intro@1"

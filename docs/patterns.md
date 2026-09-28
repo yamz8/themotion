@@ -40,7 +40,7 @@ Omarchy plays a theme's intro once per boot, in place of the wallpaper, then han
 | `length` | 6.0 s |
 | `fps` | 30 |
 | `width` × `height` | 1920 × 1080: the screen the video must cover. The video keeps the wallpaper's proportions at the smallest size that covers it, so a 3:2 wallpaper renders at 1920 × 1280 |
-| `fade_in` | 0.6 s |
+| `fade_in` | 0.6 s, lengthened for a bright wallpaper when the motion doesn't set it |
 | `settle` | 5.0 s: the motion should be finished by here |
 | `handoff` | 0.3 s blend from `settle` into the exact wallpaper |
 | `crf` | 16: x264 quality while things move; raise it for busy motions whose files grow large |

@@ -57,6 +57,8 @@ The kind decides how the picture can be brought to life:
 
 Run `themotion split wallpapers/<theme>/<wallpaper>` and look at the PNGs in `build/<theme>/<wallpaper>/layers/`. The layers drawn back in place should rebuild the wallpaper closely; the pattern's final blend covers the last few levels of difference.
 
+A wallpaper without its own `split.py` uses the automatic split for its kind, when there is one in `engine/kinds/<kind>.py`. So far there is `logo.py`: it records the backdrop and ink colours, each letter, and every pixel block of the wordmark as `[x, y, w, h, letter]` in `layers.meta.cells`, cut so that the blocks drawn from the still tile the wordmark.
+
 `credit.md` credits the wallpaper's creator as far as it is known, and any characters or marks it shows.
 
 ## 3. The motion: `scene.toml`
@@ -70,6 +72,10 @@ fade_in = 0.6
 ```
 
 The wallpaper comes from the folder the motion sits in.
+
+A motion that suits every wallpaper of one kind lives in `motions/shared/<motion>/` instead, and names the kind in its `scene.toml` (`kind = "logo"`); a `{wallpaper}` in its title becomes the wallpaper's name. Build it for one wallpaper with `--wallpaper THEME/NAME`, or for all of that kind with `--all`. It must draw from what the kind's split records, never from one wallpaper's positions.
+
+A bright wallpaper needs a longer fade from black to keep each frame's step under the check's limit. When a motion doesn't set `fade_in`, themotion lengthens it from the wallpaper's brightness.
 
 ## 4. `scene.js`: the motion itself
 
@@ -100,9 +106,12 @@ The `api` gives you:
 ## 5. Preview, render, check
 
 ```
+themotion look motions/catppuccin/1-totoro/moonrise
 themotion preview motions/catppuccin/1-totoro/moonrise --open
 themotion make motions/catppuccin/1-totoro/moonrise
 ```
+
+`look` renders small frames, puts one every half second on a single sheet (`build/.../look.png`) and says from when the frame is the wallpaper, which should be well before `settle`. It is the quickest way to see a motion, for a person or an agent.
 
 The preview page is self-contained, so it can be shared for review. `make` splits, renders, encodes and checks; add `--install` to copy the video into the Omarchy checkout. The video is named after the wallpaper, so installing a motion makes it the theme's intro for that wallpaper.
 
