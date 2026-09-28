@@ -14,7 +14,7 @@ import numpy as np
 from check import probe, still_as_video_frame
 
 
-def fit(video, wallpaper, out, spec, blend=0.4, hold=0.1):
+def fit(video, wallpaper, out, spec, blend=0.4, hold=0.1, fade_in=0.0):
     stream, duration = probe(video)
     w, h = stream["width"], stream["height"]
     num, den = (int(v) for v in stream["r_frame_rate"].split("/"))
@@ -23,6 +23,10 @@ def fit(video, wallpaper, out, spec, blend=0.4, hold=0.1):
     still = still_as_video_frame(wallpaper, w, h, "yuv420p").astype(np.float32)
 
     frames = round(duration * fps)
+    # An optional fade up from black over the first `fade_in` seconds, for
+    # footage that opens above black: black is Y 16, U and V 128.
+    black = np.concatenate([np.full(w * h, 16, np.float32), np.full(w * h // 2, 128, np.float32)])
+    fade_frames = round(fade_in * fps)
     ramp_from = frames - round((blend + hold) * fps)
     ramp_to = frames - round(hold * fps)
     settled = max(0, frames - round(max(blend + hold, 0.5) * fps))
@@ -43,6 +47,9 @@ def fit(video, wallpaper, out, spec, blend=0.4, hold=0.1):
         if len(buf) < size:
             break
         frame = np.frombuffer(buf, np.uint8)
+        if i < fade_frames:
+            k = i / fade_frames  # linear, so no frame jumps more than the rest
+            frame = np.round(black * (1 - k) + frame * k).astype(np.uint8)
         if i >= ramp_from:
             k = 1.0 if i >= ramp_to else (i - ramp_from + 1) / (ramp_to - ramp_from + 1)
             # Smoothstep, so the blend neither starts nor stops abruptly.

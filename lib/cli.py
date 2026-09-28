@@ -6,7 +6,7 @@ usage:
   themotion render  <scene>             draw every frame
   themotion finish  <scene> [--install] encode the video (and copy it into the theme)
   themotion check   <video> <wallpaper> [--pattern NAME]
-  themotion fit     <video> <wallpaper> [--out FILE]  re-finish a footage intro's ending onto the exact wallpaper
+  themotion fit     <video> <wallpaper> [--out FILE] [--fade-in SECONDS]  re-finish a footage intro's ending (and optionally its start)
   themotion make    <scene> [--install] split, render, finish and check
 
 options:
@@ -213,12 +213,12 @@ def cmd_check(video, wallpaper, pattern_name, spec=None):
         sys.exit(1)
 
 
-def cmd_fit(video, wallpaper, pattern_name, out, sets):
+def cmd_fit(video, wallpaper, pattern_name, out, sets, fade_in=0.0):
     sys.path.insert(0, LIB)
     from fit import fit
     pattern = load_pattern(pattern_name)
     spec = {**pattern["defaults"], **parse_sets(sets)}
-    n = fit(video, wallpaper, out, spec)
+    n = fit(video, wallpaper, out, spec, fade_in=fade_in)
     print(f"fitted {n} frames: {os.path.relpath(out)}")
     cmd_check(out, wallpaper, pattern_name, spec)
 
@@ -234,6 +234,7 @@ def main():
     ap.add_argument("--install", action="store_true")
     ap.add_argument("--open", action="store_true")
     ap.add_argument("--out")
+    ap.add_argument("--fade-in", type=float, default=0.0, help="fit: also fade up from black over this many seconds")
     a = ap.parse_args()
 
     if a.command == "check":
@@ -245,7 +246,7 @@ def main():
         if not a.wallpaper:
             die("usage: themotion fit <video> <wallpaper> [--out FILE]")
         out = a.out or os.path.splitext(a.target)[0] + ".fit.mp4"
-        return cmd_fit(a.target, a.wallpaper, a.pattern, out, a.sets)
+        return cmd_fit(a.target, a.wallpaper, a.pattern, out, a.sets, a.fade_in)
 
     scene = Scene(a.target, a.omarchy, a.sets)
     if a.command == "split":
