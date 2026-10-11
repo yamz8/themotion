@@ -71,7 +71,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   const s = config.spec
   $("sub").textContent = `${config.pattern} · ${s.length.toFixed(1)} s · ${s.width}×${s.height} · ${s.fps} fps`
   $("notes").innerHTML = [
-    ["Opens", `from black over ${s.fade_in} s, like the screen just before an intro plays`],
+    ["Opens", s.fade_in > 0 ? `from black over ${s.fade_in} s, like the screen just before an intro plays` : "straight on its own first frame, with no fade from black"],
     ["Lands", `on the exact wallpaper from ${s.settle.toFixed(1)} s, so the handoff to the desktop has no jump`],
     ["Idle loop", `${p.idleLength} s of gentle motion on the settled picture, for a future looping background`],
   ].map(([b, t]) => `<div><b>${b}</b>${t}</div>`).join("")

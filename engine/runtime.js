@@ -65,9 +65,12 @@
 
     // omarchy-intro: the scene's entrance, a blend into the exact still from
     // `settle`, and a fade in from black over the first `fade_in` seconds.
+    // `lead` skips the scene's first seconds, so a scene written to build up
+    // from an empty frame can open on its first motion instead.
     function intro(t) {
+      const lead = spec.lead || 0
       base()
-      scene.enter(ctx, Math.min(t, spec.settle + spec.handoff), api)
+      scene.enter(ctx, Math.min(t, spec.settle + spec.handoff) + lead, api)
       base()
       const h = themotion.ease.inOutCubic(seg(t, spec.settle, spec.settle + spec.handoff))
       if (h > 0) { ctx.globalAlpha = h; ctx.drawImage(img.still, 0, 0, W, H); ctx.globalAlpha = 1 }

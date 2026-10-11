@@ -40,6 +40,9 @@ width = 1920
 height = 1080
 # Seconds to fade in from black.
 fade_in = 0.6
+# Seconds of the scene to skip at the start, so the video opens on motion.
+# `settle` and `length` stay in video time.
+lead = 0.0
 # When the motion should be finished; from here the frame blends
 # into the exact still over `handoff` seconds, then holds it.
 settle = 5.0
